@@ -1,0 +1,1 @@
+const r=e=>e==null?!1:typeof e=="string"?e.trim().length>0:!0,s=e=>e?/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e):!1,n=e=>e?/^[0-9]{10}$/.test(e.replace(/\D/g,"")):!1,a=e=>e?/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/.test(e.toUpperCase()):!1;export{n as a,s as b,a as c,r as v};
