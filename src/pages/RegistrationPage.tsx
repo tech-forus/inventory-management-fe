@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../utils/api';
 import { Building2, User, Lock, Mail, Phone, MapPin, Globe, FileText, ArrowLeft } from 'lucide-react';
@@ -44,18 +44,77 @@ const RegistrationPage: React.FC = () => {
 
   const [errors, setErrors] = useState<Partial<FormData>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [useCompanyPhone, setUseCompanyPhone] = useState(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
+    
+    // Apply constraints based on field type
+    let filteredValue = value;
+    
+    // City and State: Only allow letters, spaces, and common punctuation (hyphens, apostrophes)
+    if (name === 'city' || name === 'state') {
+      // Remove numbers and allow only letters, spaces, hyphens, apostrophes, and periods
+      filteredValue = value.replace(/[0-9]/g, '');
+      // Enforce max length of 50
+      if (filteredValue.length > 50) {
+        filteredValue = filteredValue.substring(0, 50);
+      }
+    }
+    
+    // PIN Code: Only allow numbers
+    if (name === 'pin') {
+      // Remove all non-numeric characters
+      filteredValue = value.replace(/[^0-9]/g, '');
+    }
+    
+    // Company Name and Website: Enforce max length of 50
+    if (name === 'companyName' || name === 'website') {
+      if (filteredValue.length > 50) {
+        filteredValue = filteredValue.substring(0, 50);
+      }
+    }
+    
     setFormData(prev => ({
       ...prev,
-      [name]: value
+      [name]: filteredValue,
+      // If company phone changes and checkbox is checked, update admin phone too
+      ...(name === 'phone' && useCompanyPhone ? { adminPhone: filteredValue } : {})
     }));
     // Clear error when user starts typing
     if (errors[name as keyof FormData]) {
       setErrors(prev => ({
         ...prev,
         [name]: undefined
+      }));
+    }
+  };
+
+  // Sync admin phone with company phone when checkbox is checked
+  useEffect(() => {
+    if (useCompanyPhone) {
+      setFormData(prev => ({
+        ...prev,
+        adminPhone: prev.phone
+      }));
+      // Clear admin phone error when syncing
+      if (errors.adminPhone) {
+        setErrors(prev => ({
+          ...prev,
+          adminPhone: undefined
+        }));
+      }
+    }
+  }, [useCompanyPhone, formData.phone]);
+
+  const handleUseCompanyPhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const checked = e.target.checked;
+    setUseCompanyPhone(checked);
+    if (checked) {
+      // When checked, copy company phone to admin phone
+      setFormData(prev => ({
+        ...prev,
+        adminPhone: prev.phone
       }));
     }
   };
@@ -268,6 +327,7 @@ const RegistrationPage: React.FC = () => {
                     name="companyName"
                     value={formData.companyName}
                     onChange={handleChange}
+                    maxLength={50}
                     className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all ${
                       errors.companyName ? 'border-red-500' : 'border-gray-300'
                     }`}
@@ -323,7 +383,6 @@ const RegistrationPage: React.FC = () => {
                     <option value="">Select Business Type</option>
                     <option value="Manufacturing">Manufacturing</option>
                     <option value="Trading">Trading</option>
-                    <option value="Retail">Retail</option>
                   </select>
                 </div>
                 {errors.businessType && (
@@ -368,10 +427,13 @@ const RegistrationPage: React.FC = () => {
                     name="city"
                     value={formData.city}
                     onChange={handleChange}
+                    pattern="[A-Za-z\s\-'\.]+"
+                    maxLength={50}
                     className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all ${
                       errors.city ? 'border-red-500' : 'border-gray-300'
                     }`}
                     placeholder="Enter city"
+                    title="City should contain only letters, spaces, hyphens, and apostrophes (max 50 characters)"
                   />
                 </div>
                 {errors.city && (
@@ -392,10 +454,13 @@ const RegistrationPage: React.FC = () => {
                     name="state"
                     value={formData.state}
                     onChange={handleChange}
+                    pattern="[A-Za-z\s\-'\.]+"
+                    maxLength={50}
                     className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all ${
                       errors.state ? 'border-red-500' : 'border-gray-300'
                     }`}
                     placeholder="Enter state"
+                    title="State should contain only letters, spaces, hyphens, and apostrophes (max 50 characters)"
                   />
                 </div>
                 {errors.state && (
@@ -416,11 +481,14 @@ const RegistrationPage: React.FC = () => {
                     name="pin"
                     value={formData.pin}
                     onChange={handleChange}
+                    pattern="[0-9]{6}"
+                    inputMode="numeric"
                     className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all ${
                       errors.pin ? 'border-red-500' : 'border-gray-300'
                     }`}
                     placeholder="123456"
                     maxLength={6}
+                    title="PIN code should contain exactly 6 digits"
                   />
                 </div>
                 {errors.pin && (
@@ -466,10 +534,12 @@ const RegistrationPage: React.FC = () => {
                     name="website"
                     value={formData.website}
                     onChange={handleChange}
+                    maxLength={50}
                     className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all ${
                       errors.website ? 'border-red-500' : 'border-gray-300'
                     }`}
                     placeholder="https://www.example.com"
+                    title="Website URL (max 50 characters)"
                   />
                 </div>
                 {errors.website && (
@@ -539,9 +609,20 @@ const RegistrationPage: React.FC = () => {
 
               {/* Admin Phone */}
               <div>
-                <label htmlFor="adminPhone" className="block text-sm font-medium text-gray-700 mb-2">
-                  Phone <span className="text-red-500">*</span>
-                </label>
+                <div className="flex items-center justify-between mb-2">
+                  <label htmlFor="adminPhone" className="block text-sm font-medium text-gray-700">
+                    Phone <span className="text-red-500">*</span>
+                  </label>
+                  <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={useCompanyPhone}
+                      onChange={handleUseCompanyPhoneChange}
+                      className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                    />
+                    <span>Same as company phone</span>
+                  </label>
+                </div>
                 <div className="relative">
                   <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
                   <input
@@ -550,9 +631,10 @@ const RegistrationPage: React.FC = () => {
                     name="adminPhone"
                     value={formData.adminPhone}
                     onChange={handleChange}
+                    disabled={useCompanyPhone}
                     className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all ${
                       errors.adminPhone ? 'border-red-500' : 'border-gray-300'
-                    }`}
+                    } ${useCompanyPhone ? 'bg-gray-100 cursor-not-allowed' : 'bg-white'}`}
                     placeholder="9876543210"
                     maxLength={10}
                   />

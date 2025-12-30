@@ -3,6 +3,7 @@ import { ArrowLeft, Plus, X, UserPlus, CheckCircle2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { validateRequired, validateEmail } from '../utils/validators';
 import api from '../utils/api';
+import { libraryService } from '../services/libraryService';
 
 const InviteUserPage: React.FC = () => {
   const navigate = useNavigate();
@@ -37,6 +38,11 @@ const InviteUserPage: React.FC = () => {
   const [subCategories, setSubCategories] = useState<any[]>([]);
   const [items, setItems] = useState<any[]>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  
+  // Team members data
+  const [teams, setTeams] = useState<any[]>([]);
+  const [selectedTeamId, setSelectedTeamId] = useState<number | null>(null);
+  const [loadingTeams, setLoadingTeams] = useState(false);
 
   useEffect(() => {
     // Load product categories
@@ -47,6 +53,21 @@ const InviteUserPage: React.FC = () => {
       .catch((error) => {
         console.error('Error loading categories:', error);
       });
+    
+    // Load team members from library
+    const loadTeams = async () => {
+      try {
+        setLoadingTeams(true);
+        const response = await libraryService.getTeams();
+        setTeams(response.data || []);
+      } catch (error) {
+        console.error('Error loading teams:', error);
+        setTeams([]);
+      } finally {
+        setLoadingTeams(false);
+      }
+    };
+    loadTeams();
   }, []);
 
   const handleInviteUser = async () => {
@@ -98,6 +119,7 @@ const InviteUserPage: React.FC = () => {
       setSuccess(true);
       
       // Reset form
+      setSelectedTeamId(null);
       setInviteForm({
         email: '',
         firstName: '',
@@ -256,7 +278,51 @@ const InviteUserPage: React.FC = () => {
     });
   };
 
+  const handleTeamSelection = (teamId: string) => {
+    if (!teamId || teamId === '') {
+      setSelectedTeamId(null);
+      // Clear form fields
+      setInviteForm({
+        ...inviteForm,
+        email: '',
+        firstName: '',
+        lastName: '',
+        employeeId: '',
+        department: '',
+      });
+      return;
+    }
+    
+    const selectedTeam = teams.find((team) => team.id === parseInt(teamId));
+    if (!selectedTeam) return;
+    
+    setSelectedTeamId(parseInt(teamId));
+    
+    // Split name into first and last name
+    const nameParts = (selectedTeam.name || '').trim().split(' ');
+    const firstName = nameParts[0] || '';
+    const lastName = nameParts.slice(1).join(' ') || '';
+    
+    // Auto-populate form fields
+    setInviteForm({
+      ...inviteForm,
+      email: selectedTeam.emailId || '',
+      firstName: firstName,
+      lastName: lastName,
+      department: selectedTeam.department || '',
+      // Note: employeeId is not available in team data, so it remains empty
+    });
+    
+    // Clear any errors for these fields
+    const newErrors = { ...errors };
+    if (newErrors.email) delete newErrors.email;
+    if (newErrors.firstName) delete newErrors.firstName;
+    if (newErrors.lastName) delete newErrors.lastName;
+    setErrors(newErrors);
+  };
+
   const resetForm = () => {
+    setSelectedTeamId(null);
     setInviteForm({
       email: '',
       firstName: '',
@@ -313,13 +379,40 @@ const InviteUserPage: React.FC = () => {
 
       <div className="bg-white rounded-lg shadow-sm border border-gray-200">
         <div className="p-6 space-y-8">
-          {/* Basic Information */}
+          {/* Select Team Member */}
           <div>
             <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center gap-2">
               <UserPlus className="w-5 h-5" />
-              Basic Information
+              Select Team Member
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Team Member <span className="text-red-500">*</span>
+                </label>
+                <select
+                  value={selectedTeamId || ''}
+                  onChange={(e) => handleTeamSelection(e.target.value)}
+                  disabled={loadingTeams}
+                  className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                    loadingTeams ? 'bg-gray-100 cursor-not-allowed' : 'border-gray-300'
+                  }`}
+                >
+                  <option value="">Select a team member from library</option>
+                  {teams.map((team) => (
+                    <option key={team.id} value={team.id}>
+                      {team.name} - {team.emailId} ({team.department})
+                    </option>
+                  ))}
+                </select>
+                {loadingTeams && (
+                  <p className="text-sm text-gray-500 mt-1">Loading team members...</p>
+                )}
+                {!loadingTeams && teams.length === 0 && (
+                  <p className="text-sm text-gray-500 mt-1">No team members found in library</p>
+                )}
+              </div>
+              
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Email <span className="text-red-500">*</span>
@@ -327,13 +420,16 @@ const InviteUserPage: React.FC = () => {
                 <input
                   type="email"
                   value={inviteForm.email}
+                  readOnly={!!selectedTeamId}
                   onChange={(e) => {
-                    setInviteForm({ ...inviteForm, email: e.target.value });
-                    if (errors.email) setErrors({ ...errors, email: '' });
+                    if (!selectedTeamId) {
+                      setInviteForm({ ...inviteForm, email: e.target.value });
+                      if (errors.email) setErrors({ ...errors, email: '' });
+                    }
                   }}
                   className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
                     errors.email ? 'border-red-500' : 'border-gray-300'
-                  }`}
+                  } ${selectedTeamId ? 'bg-gray-100 cursor-not-allowed' : ''}`}
                   placeholder="user@example.com"
                 />
                 {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email}</p>}
@@ -420,13 +516,16 @@ const InviteUserPage: React.FC = () => {
                 <input
                   type="text"
                   value={inviteForm.firstName}
+                  readOnly={!!selectedTeamId}
                   onChange={(e) => {
-                    setInviteForm({ ...inviteForm, firstName: e.target.value });
-                    if (errors.firstName) setErrors({ ...errors, firstName: '' });
+                    if (!selectedTeamId) {
+                      setInviteForm({ ...inviteForm, firstName: e.target.value });
+                      if (errors.firstName) setErrors({ ...errors, firstName: '' });
+                    }
                   }}
                   className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
                     errors.firstName ? 'border-red-500' : 'border-gray-300'
-                  }`}
+                  } ${selectedTeamId ? 'bg-gray-100 cursor-not-allowed' : ''}`}
                   placeholder="John"
                 />
                 {errors.firstName && <p className="text-red-500 text-xs mt-1">{errors.firstName}</p>}
@@ -439,13 +538,16 @@ const InviteUserPage: React.FC = () => {
                 <input
                   type="text"
                   value={inviteForm.lastName}
+                  readOnly={!!selectedTeamId}
                   onChange={(e) => {
-                    setInviteForm({ ...inviteForm, lastName: e.target.value });
-                    if (errors.lastName) setErrors({ ...errors, lastName: '' });
+                    if (!selectedTeamId) {
+                      setInviteForm({ ...inviteForm, lastName: e.target.value });
+                      if (errors.lastName) setErrors({ ...errors, lastName: '' });
+                    }
                   }}
                   className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
                     errors.lastName ? 'border-red-500' : 'border-gray-300'
-                  }`}
+                  } ${selectedTeamId ? 'bg-gray-100 cursor-not-allowed' : ''}`}
                   placeholder="Doe"
                 />
                 {errors.lastName && <p className="text-red-500 text-xs mt-1">{errors.lastName}</p>}
@@ -462,13 +564,20 @@ const InviteUserPage: React.FC = () => {
                 />
               </div>
               
-              <div className="md:col-span-2">
+              <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Department</label>
                 <input
                   type="text"
                   value={inviteForm.department}
-                  onChange={(e) => setInviteForm({ ...inviteForm, department: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  readOnly={!!selectedTeamId}
+                  onChange={(e) => {
+                    if (!selectedTeamId) {
+                      setInviteForm({ ...inviteForm, department: e.target.value });
+                    }
+                  }}
+                  className={`w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                    selectedTeamId ? 'bg-gray-100 cursor-not-allowed' : ''
+                  }`}
                   placeholder="Sales, Warehouse, Accounting, etc."
                 />
               </div>

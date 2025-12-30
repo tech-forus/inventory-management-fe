@@ -20,6 +20,24 @@ interface TeamsTabProps {
   onRefresh: () => void;
 }
 
+// Department and Designation mapping
+const departmentDesignations: Record<string, string[]> = {
+  'Engineering / Technology': ['Software Engineer', 'Engineering Manager'],
+  'Product': ['Product Manager', 'Product Lead'],
+  'Quality / Testing': ['QA Engineer', 'QA Manager'],
+  'Data / Analytics': ['Data Analyst', 'Data Scientist'],
+  'Sales': ['Sales Executive', 'Sales Manager'],
+  'Marketing': ['Marketing Specialist', 'Marketing Manager'],
+  'Customer Support / Success': ['Customer Support Executive', 'Customer Success Manager'],
+  'Finance / Accounts': ['Accountant', 'Finance Manager'],
+  'Human Resources (HR)': ['HR Executive', 'HR Manager'],
+  'Operations': ['Operations Executive', 'Operations Manager'],
+  'Legal / Compliance': ['Legal Officer', 'Compliance Manager'],
+  'Administration': ['Admin Executive', 'Admin Manager'],
+};
+
+const departments = Object.keys(departmentDesignations);
+
 const TeamsTab: React.FC<TeamsTabProps> = ({ teams, loading, onRefresh }) => {
   const [search, setSearch] = useState('');
   const [showDialog, setShowDialog] = useState(false);
@@ -57,6 +75,79 @@ const TeamsTab: React.FC<TeamsTabProps> = ({ teams, loading, onRefresh }) => {
     setShowDialog(true);
     setErrors({});
   };
+
+  const handleDepartmentChange = (department: string) => {
+    setTeamForm({
+      ...teamForm,
+      department,
+      designation: '', // Clear designation when department changes
+    });
+    // Clear designation error when department changes
+    if (errors.designation) {
+      setErrors(prev => ({
+        ...prev,
+        designation: undefined,
+      }));
+    }
+  };
+
+  const handleDesignationChange = (designation: string) => {
+    setTeamForm({
+      ...teamForm,
+      designation,
+    });
+    // Clear designation error when designation is selected
+    if (errors.designation) {
+      setErrors(prev => ({
+        ...prev,
+        designation: undefined,
+      }));
+    }
+  };
+
+  const handleNameChange = (value: string) => {
+    // Only allow letters, spaces, hyphens, apostrophes, and periods
+    // Max 25 characters
+    let filteredValue = value.replace(/[^A-Za-z\s\-'\.]/g, '');
+    if (filteredValue.length > 25) {
+      filteredValue = filteredValue.substring(0, 25);
+    }
+    setTeamForm({
+      ...teamForm,
+      name: filteredValue,
+    });
+    // Clear name error when user starts typing
+    if (errors.name) {
+      setErrors(prev => ({
+        ...prev,
+        name: undefined,
+      }));
+    }
+  };
+
+  const handleContactNumberChange = (value: string) => {
+    // Only allow numbers, max 10 characters
+    let filteredValue = value.replace(/[^0-9]/g, '');
+    if (filteredValue.length > 10) {
+      filteredValue = filteredValue.substring(0, 10);
+    }
+    setTeamForm({
+      ...teamForm,
+      contactNumber: filteredValue,
+    });
+    // Clear contact number error when user starts typing
+    if (errors.contactNumber) {
+      setErrors(prev => ({
+        ...prev,
+        contactNumber: undefined,
+      }));
+    }
+  };
+
+  // Get available designations for selected department
+  const availableDesignations = teamForm.department 
+    ? departmentDesignations[teamForm.department] || []
+    : [];
 
   const handleSave = async () => {
     const newErrors: Record<string, string> = {};
@@ -319,11 +410,14 @@ const TeamsTab: React.FC<TeamsTabProps> = ({ teams, loading, onRefresh }) => {
                   <input
                     type="text"
                     value={teamForm.name}
-                    onChange={(e) => setTeamForm({ ...teamForm, name: e.target.value })}
+                    onChange={(e) => handleNameChange(e.target.value)}
+                    maxLength={25}
+                    pattern="[A-Za-z\s\-'\.]+"
                     className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${
                       errors.name ? 'border-red-500' : 'border-gray-300'
                     }`}
                     placeholder="Enter name"
+                    title="Name should contain only letters, spaces, hyphens, and apostrophes (max 25 characters)"
                   />
                   {errors.name && <p className="text-red-500 text-xs mt-1">{errors.name}</p>}
                 </div>
@@ -335,11 +429,15 @@ const TeamsTab: React.FC<TeamsTabProps> = ({ teams, loading, onRefresh }) => {
                     <input
                       type="text"
                       value={teamForm.contactNumber}
-                      onChange={(e) => setTeamForm({ ...teamForm, contactNumber: e.target.value })}
+                      onChange={(e) => handleContactNumberChange(e.target.value)}
+                      maxLength={10}
+                      pattern="[0-9]{10}"
+                      inputMode="numeric"
                       className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${
                         errors.contactNumber ? 'border-red-500' : 'border-gray-300'
                       }`}
                       placeholder="Enter contact number"
+                      title="Contact number should contain exactly 10 digits"
                     />
                     {errors.contactNumber && <p className="text-red-500 text-xs mt-1">{errors.contactNumber}</p>}
                   </div>
@@ -364,30 +462,43 @@ const TeamsTab: React.FC<TeamsTabProps> = ({ teams, loading, onRefresh }) => {
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Department <span className="text-red-500">*</span>
                     </label>
-                    <input
-                      type="text"
-                      value={teamForm.department}
-                      onChange={(e) => setTeamForm({ ...teamForm, department: e.target.value })}
+                    <select
+                      value={teamForm.department || ''}
+                      onChange={(e) => handleDepartmentChange(e.target.value)}
                       className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${
                         errors.department ? 'border-red-500' : 'border-gray-300'
                       }`}
-                      placeholder="Enter department"
-                    />
+                    >
+                      <option value="">Select Department</option>
+                      {departments.map((dept) => (
+                        <option key={dept} value={dept}>
+                          {dept}
+                        </option>
+                      ))}
+                    </select>
                     {errors.department && <p className="text-red-500 text-xs mt-1">{errors.department}</p>}
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Designation <span className="text-red-500">*</span>
                     </label>
-                    <input
-                      type="text"
-                      value={teamForm.designation}
-                      onChange={(e) => setTeamForm({ ...teamForm, designation: e.target.value })}
+                    <select
+                      value={teamForm.designation || ''}
+                      onChange={(e) => handleDesignationChange(e.target.value)}
+                      disabled={!teamForm.department}
                       className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${
                         errors.designation ? 'border-red-500' : 'border-gray-300'
-                      }`}
-                      placeholder="Enter designation"
-                    />
+                      } ${!teamForm.department ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                    >
+                      <option value="">
+                        {teamForm.department ? 'Select Designation' : 'Select Department first'}
+                      </option>
+                      {availableDesignations.map((designation) => (
+                        <option key={designation} value={designation}>
+                          {designation}
+                        </option>
+                      ))}
+                    </select>
                     {errors.designation && <p className="text-red-500 text-xs mt-1">{errors.designation}</p>}
                   </div>
                 </div>
