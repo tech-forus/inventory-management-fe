@@ -1,1 +1,0 @@
-const e="nexusinv:categories-updated";function o(){window.dispatchEvent(new CustomEvent(e))}function i(n){const t=()=>n();return window.addEventListener(e,t),()=>window.removeEventListener(e,t)}export{o as e,i as o};
