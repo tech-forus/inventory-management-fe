@@ -387,18 +387,26 @@ const AccessControlPage: React.FC = () => {
     }
   };
 
-  const handleDelete = async (type: string, id: number) => {
-    if (!window.confirm('Are you sure you want to delete this item?')) return;
+  const handleDelete = async (type: string, id: number, userName?: string, userEmail?: string) => {
+    const confirmMessage = type === 'user' 
+      ? `Are you sure you want to delete ${userName || 'this user'} (${userEmail || ''})? This action cannot be undone and will permanently remove all their data and deny access.`
+      : 'Are you sure you want to delete this item?';
+    
+    if (!window.confirm(confirmMessage)) return;
+    
     try {
       setLoading(true);
       if (type === 'user') {
         await api.delete(`/users/${id}`);
+        alert('User deleted successfully. Their access has been revoked.');
       } else if (type === 'role') {
         await api.delete(`/roles/${id}`);
+        alert('Role deleted successfully.');
       }
       loadData();
     } catch (error: any) {
-      alert(error.response?.data?.error || 'Failed to delete item');
+      const errorMessage = error.response?.data?.error || error.response?.data?.message || 'Failed to delete item';
+      alert(`Error: ${errorMessage}`);
     } finally {
       setLoading(false);
     }
@@ -580,9 +588,19 @@ const AccessControlPage: React.FC = () => {
                           </td>
                           <td className="px-4 py-3 text-sm text-gray-700">{formatDate(user.createdAt)}</td>
                           <td className="px-4 py-3 text-sm">
-                            <button className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg" title="View">
-                              <Eye className="w-4 h-4" />
-                            </button>
+                            <div className="flex items-center gap-2">
+                              <button className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="View">
+                                <Eye className="w-4 h-4" />
+                              </button>
+                              <button 
+                                onClick={() => handleDelete('user', user.id, user.fullName, user.email)}
+                                className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors" 
+                                title="Delete User"
+                                disabled={loading}
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
                           </td>
                         </tr>
                       ))
@@ -705,9 +723,19 @@ const AccessControlPage: React.FC = () => {
                           </td>
                           <td className="px-4 py-3 text-sm text-gray-700">{formatDate(user.createdAt)}</td>
                           <td className="px-4 py-3 text-sm">
-                            <button className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg" title="View">
-                              <Eye className="w-4 h-4" />
-                            </button>
+                            <div className="flex items-center gap-2">
+                              <button className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="View">
+                                <Eye className="w-4 h-4" />
+                              </button>
+                              <button 
+                                onClick={() => handleDelete('user', user.id, user.fullName, user.email)}
+                                className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors" 
+                                title="Delete User"
+                                disabled={loading}
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
                           </td>
                         </tr>
                       ))
