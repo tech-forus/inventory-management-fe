@@ -1,0 +1,1 @@
+const n="nexusinv:inventory-updated";function o(){window.dispatchEvent(new CustomEvent(n))}function d(t){const e=()=>t();return window.addEventListener(n,e),()=>window.removeEventListener(n,e)}export{o as e,d as o};
