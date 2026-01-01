@@ -42,6 +42,8 @@ export default function SimpleCategoryEditPage() {
       // Parse the ID format: "sub-123" or "item-123" or "product-123"
       const [type, numericId] = id.split('-');
 
+      console.log('Fetching category:', { type, numericId, id });
+
       let data: FormData = {
         productCategory: '',
         itemCategory: '',
@@ -51,15 +53,20 @@ export default function SimpleCategoryEditPage() {
       if (type === 'sub') {
         // Fetch sub category
         const subRes = await libraryService.getSubCategoryById(Number(numericId));
-        const subCat = subRes.data;
+        console.log('Sub category response:', subRes);
+
+        // Handle both response formats: { data: {...} } or { success: true, data: {...} }
+        const subCat = subRes.success ? subRes.data : subRes;
 
         // Fetch parent item category
-        const itemRes = await libraryService.getItemCategoryById(subCat.itemCategoryId);
-        const itemCat = itemRes.data;
+        const itemRes = await libraryService.getItemCategoryById(subCat.itemCategoryId || subCat.item_category_id);
+        console.log('Item category response:', itemRes);
+        const itemCat = itemRes.success ? itemRes.data : itemRes;
 
         // Fetch grandparent product category
-        const prodRes = await libraryService.getProductCategoryById(itemCat.productCategoryId);
-        const prodCat = prodRes.data;
+        const prodRes = await libraryService.getProductCategoryById(itemCat.productCategoryId || itemCat.product_category_id);
+        console.log('Product category response:', prodRes);
+        const prodCat = prodRes.success ? prodRes.data : prodRes;
 
         data = {
           productCategory: prodCat.name || '',
@@ -71,11 +78,13 @@ export default function SimpleCategoryEditPage() {
       } else if (type === 'item') {
         // Fetch item category
         const itemRes = await libraryService.getItemCategoryById(Number(numericId));
-        const itemCat = itemRes.data;
+        console.log('Item category response:', itemRes);
+        const itemCat = itemRes.success ? itemRes.data : itemRes;
 
         // Fetch parent product category
-        const prodRes = await libraryService.getProductCategoryById(itemCat.productCategoryId);
-        const prodCat = prodRes.data;
+        const prodRes = await libraryService.getProductCategoryById(itemCat.productCategoryId || itemCat.product_category_id);
+        console.log('Product category response:', prodRes);
+        const prodCat = prodRes.success ? prodRes.data : prodRes;
 
         data = {
           productCategory: prodCat.name || '',
@@ -87,7 +96,8 @@ export default function SimpleCategoryEditPage() {
       } else if (type === 'product') {
         // Fetch product category only
         const prodRes = await libraryService.getProductCategoryById(Number(numericId));
-        const prodCat = prodRes.data;
+        console.log('Product category response:', prodRes);
+        const prodCat = prodRes.success ? prodRes.data : prodRes;
 
         data = {
           productCategory: prodCat.name || '',
@@ -97,10 +107,12 @@ export default function SimpleCategoryEditPage() {
         };
       }
 
+      console.log('Final form data:', data);
       setFormData(data);
       setOriginalData(data);
     } catch (err: any) {
       console.error('Failed to fetch category:', err);
+      console.error('Error response:', err.response);
       setError(err.response?.data?.error || 'Failed to load category data');
     } finally {
       setLoading(false);
