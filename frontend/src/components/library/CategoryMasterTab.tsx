@@ -89,41 +89,17 @@ const CategoryMasterTab: React.FC<CategoryMasterTabProps> = ({
   const [multipleSubCategories, setMultipleSubCategories] = useState<Array<{ name: string }>>([{ name: '' }]);
 
   // Build unified rows from all category types
+  // Strategy: Only create rows for sub-categories (the most specific level)
+  // This ensures each row represents a complete hierarchy
   useEffect(() => {
     const rows: UnifiedCategoryRow[] = [];
 
-    // Add Product Categories
-    productCategories.forEach((pc) => {
-      rows.push({
-        id: `product-${pc.id}`,
-        type: 'product',
-        productCategory: pc.name,
-        itemCategory: '-',
-        subCategory: '-',
-        createdAt: pc.createdAt || '',
-        productCategoryId: pc.id,
-      });
-    });
-
-    // Add Item Categories
-    itemCategories.forEach((ic) => {
-      const productCat = productCategories.find((pc) => pc.id === ic.productCategoryId);
-      rows.push({
-        id: `item-${ic.id}`,
-        type: 'item',
-        productCategory: productCat?.name || '-',
-        itemCategory: ic.name,
-        subCategory: '-',
-        createdAt: ic.createdAt || '',
-        productCategoryId: ic.productCategoryId,
-        itemCategoryId: ic.id,
-      });
-    });
-
-    // Add Sub Categories
+    // Only iterate through sub-categories to create rows
+    // Each sub-category represents one complete hierarchy path
     subCategories.forEach((sc) => {
       const itemCat = itemCategories.find((ic) => ic.id === sc.itemCategoryId);
       const productCat = productCategories.find((pc) => pc.id === itemCat?.productCategoryId);
+
       rows.push({
         id: `sub-${sc.id}`,
         type: 'sub',
