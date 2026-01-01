@@ -55,18 +55,33 @@ export default function SimpleCategoryEditPage() {
         const subRes = await libraryService.getSubCategoryById(Number(numericId));
         console.log('Sub category response:', subRes);
 
-        // Handle both response formats: { data: {...} } or { success: true, data: {...} }
-        const subCat = subRes.success ? subRes.data : subRes;
+        // Extract data from axios response
+        const subCat = subRes.data?.data || subRes.data;
+        console.log('Sub category data:', subCat);
+
+        if (!subCat) {
+          throw new Error('Sub category not found');
+        }
 
         // Fetch parent item category
         const itemRes = await libraryService.getItemCategoryById(subCat.itemCategoryId || subCat.item_category_id);
         console.log('Item category response:', itemRes);
-        const itemCat = itemRes.success ? itemRes.data : itemRes;
+        const itemCat = itemRes.data?.data || itemRes.data;
+        console.log('Item category data:', itemCat);
+
+        if (!itemCat) {
+          throw new Error('Item category not found');
+        }
 
         // Fetch grandparent product category
         const prodRes = await libraryService.getProductCategoryById(itemCat.productCategoryId || itemCat.product_category_id);
         console.log('Product category response:', prodRes);
-        const prodCat = prodRes.success ? prodRes.data : prodRes;
+        const prodCat = prodRes.data?.data || prodRes.data;
+        console.log('Product category data:', prodCat);
+
+        if (!prodCat) {
+          throw new Error('Product category not found');
+        }
 
         data = {
           productCategory: prodCat.name || '',
@@ -79,12 +94,20 @@ export default function SimpleCategoryEditPage() {
         // Fetch item category
         const itemRes = await libraryService.getItemCategoryById(Number(numericId));
         console.log('Item category response:', itemRes);
-        const itemCat = itemRes.success ? itemRes.data : itemRes;
+        const itemCat = itemRes.data?.data || itemRes.data;
+
+        if (!itemCat) {
+          throw new Error('Item category not found');
+        }
 
         // Fetch parent product category
         const prodRes = await libraryService.getProductCategoryById(itemCat.productCategoryId || itemCat.product_category_id);
         console.log('Product category response:', prodRes);
-        const prodCat = prodRes.success ? prodRes.data : prodRes;
+        const prodCat = prodRes.data?.data || prodRes.data;
+
+        if (!prodCat) {
+          throw new Error('Product category not found');
+        }
 
         data = {
           productCategory: prodCat.name || '',
@@ -97,7 +120,11 @@ export default function SimpleCategoryEditPage() {
         // Fetch product category only
         const prodRes = await libraryService.getProductCategoryById(Number(numericId));
         console.log('Product category response:', prodRes);
-        const prodCat = prodRes.success ? prodRes.data : prodRes;
+        const prodCat = prodRes.data?.data || prodRes.data;
+
+        if (!prodCat) {
+          throw new Error('Product category not found');
+        }
 
         data = {
           productCategory: prodCat.name || '',
