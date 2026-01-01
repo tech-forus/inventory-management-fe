@@ -716,7 +716,7 @@ const CategoryMasterTab: React.FC<CategoryMasterTabProps> = ({
             className="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2 text-sm"
           >
             <Plus className="w-4 h-4" />
-            Add Complete Hierarchy
+            Add Category
           </button>
           <button
             onClick={handleDownloadTemplate}
@@ -822,7 +822,7 @@ const CategoryMasterTab: React.FC<CategoryMasterTabProps> = ({
             <div className="p-4">
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-xl font-bold text-gray-900">
-                  {formType === 'complete' ? 'Add Complete Hierarchy' : editingRow ? `Edit ${formType === 'product' ? 'Product' : formType === 'item' ? 'Item' : 'Sub'} Category` : `Add ${formType === 'product' ? 'Product' : formType === 'item' ? 'Item' : 'Sub'} Category`}
+                  {formType === 'complete' ? 'Add Category' : editingRow ? `Edit ${formType === 'product' ? 'Product' : formType === 'item' ? 'Item' : 'Sub'} Category` : `Add ${formType === 'product' ? 'Product' : formType === 'item' ? 'Item' : 'Sub'} Category`}
                 </h2>
                 <button
                   onClick={handleCloseDialog}
