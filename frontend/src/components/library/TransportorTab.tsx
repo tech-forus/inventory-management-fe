@@ -12,10 +12,6 @@ interface Transportor {
   contactNumber?: string;
   email?: string;
   gstNumber?: string;
-  vehicleType?: string;
-  capacity?: string;
-  pricingType?: string;
-  rate?: number;
   isActive: boolean;
   remarks?: string;
 }
