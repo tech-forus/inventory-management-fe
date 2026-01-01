@@ -1071,8 +1071,8 @@ export default function AddManageCategoriesPage() {
                           }}
                           className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-medium transition-all whitespace-nowrap ${
                             isSelected
-                              ? 'bg-blue-700 text-white border border-blue-700'
-                              : 'bg-blue-600 text-white border border-blue-600 hover:bg-blue-700'
+                              ? 'bg-blue-600 text-white border border-blue-600'
+                              : 'bg-white text-gray-700 border border-gray-300 hover:border-blue-600 hover:text-blue-600'
                           }`}
                         >
                           <span className="text-base">#</span>
