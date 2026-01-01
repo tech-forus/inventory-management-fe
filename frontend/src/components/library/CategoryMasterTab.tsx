@@ -63,10 +63,17 @@ const CategoryMasterTab: React.FC<CategoryMasterTabProps> = ({
   const [unifiedRows, setUnifiedRows] = useState<UnifiedCategoryRow[]>([]);
   const [showDialog, setShowDialog] = useState(false);
   const [editingRow, setEditingRow] = useState<UnifiedCategoryRow | null>(null);
-  const [formType, setFormType] = useState<'product' | 'item' | 'sub'>('product');
+  const [formType, setFormType] = useState<'product' | 'item' | 'sub' | 'complete'>('product');
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isMultipleMode, setIsMultipleMode] = useState(false);
+
+  // Complete hierarchy form state
+  const [completeHierarchyForm, setCompleteHierarchyForm] = useState({
+    productCategory: '',
+    itemCategory: '',
+    subCategory: ''
+  });
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   // Upload preview states
@@ -196,6 +203,11 @@ const CategoryMasterTab: React.FC<CategoryMasterTabProps> = ({
     setEditingRow(null);
     setErrors({});
     setIsMultipleMode(false);
+    setCompleteHierarchyForm({
+      productCategory: '',
+      itemCategory: '',
+      subCategory: ''
+    });
   };
 
   const addMultipleItemRow = () => {
@@ -288,7 +300,60 @@ const CategoryMasterTab: React.FC<CategoryMasterTabProps> = ({
     }
   };
 
+  const handleSaveCompleteHierarchy = async () => {
+    const newErrors: Record<string, string> = {};
+
+    if (!completeHierarchyForm.productCategory.trim()) {
+      newErrors.productCategory = 'Product Category is required';
+    }
+    if (!completeHierarchyForm.itemCategory.trim()) {
+      newErrors.itemCategory = 'Item Category is required';
+    }
+    if (!completeHierarchyForm.subCategory.trim()) {
+      newErrors.subCategory = 'Sub Category is required';
+    }
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      return;
+    }
+
+    try {
+      setSaving(true);
+
+      // Step 1: Create or get Product Category
+      const productRes = await libraryService.createYourProductCategory({
+        name: completeHierarchyForm.productCategory.trim()
+      });
+      const productId = productRes.id;
+
+      // Step 2: Create or get Item Category
+      const itemRes = await libraryService.createYourItemCategory({
+        name: completeHierarchyForm.itemCategory.trim(),
+        productCategoryId: productId
+      });
+      const itemId = itemRes.id;
+
+      // Step 3: Create Sub Category
+      await libraryService.createYourSubCategory({
+        name: completeHierarchyForm.subCategory.trim(),
+        itemCategoryId: itemId
+      });
+
+      handleCloseDialog();
+      onRefresh();
+    } catch (error: any) {
+      alert(error.response?.data?.error || 'Failed to save complete hierarchy');
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const handleSave = async () => {
+    if (formType === 'complete') {
+      await handleSaveCompleteHierarchy();
+      return;
+    }
     if (isMultipleMode && formType === 'item') {
       await handleSaveMultipleItems();
       return;
@@ -641,11 +706,17 @@ const CategoryMasterTab: React.FC<CategoryMasterTabProps> = ({
         </div>
         <div className="flex flex-wrap gap-2">
           <button
-            onClick={() => navigate('/app/library/categories/manage')}
+            onClick={() => {
+              setFormType('complete');
+              setShowDialog(true);
+              setEditingRow(null);
+              setFormData({ name: '', description: '', parentId: undefined });
+              setErrors({});
+            }}
             className="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2 text-sm"
           >
             <Plus className="w-4 h-4" />
-            Add Category
+            Add Complete Hierarchy
           </button>
           <button
             onClick={handleDownloadTemplate}
@@ -751,7 +822,7 @@ const CategoryMasterTab: React.FC<CategoryMasterTabProps> = ({
             <div className="p-4">
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-xl font-bold text-gray-900">
-                  {editingRow ? `Edit ${formType === 'product' ? 'Product' : formType === 'item' ? 'Item' : 'Sub'} Category` : `Add ${formType === 'product' ? 'Product' : formType === 'item' ? 'Item' : 'Sub'} Category`}
+                  {formType === 'complete' ? 'Add Complete Hierarchy' : editingRow ? `Edit ${formType === 'product' ? 'Product' : formType === 'item' ? 'Item' : 'Sub'} Category` : `Add ${formType === 'product' ? 'Product' : formType === 'item' ? 'Item' : 'Sub'} Category`}
                 </h2>
                 <button
                   onClick={handleCloseDialog}
@@ -760,6 +831,65 @@ const CategoryMasterTab: React.FC<CategoryMasterTabProps> = ({
                   <X className="w-5 h-5" />
                 </button>
               </div>
+
+              {/* Complete Hierarchy Form */}
+              {formType === 'complete' && (
+                <div className="space-y-4">
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
+                    <p className="text-xs text-blue-800">
+                      This form allows you to create a complete category hierarchy (Product → Item → Sub) all at once, just like the Excel upload.
+                    </p>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Product Category <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={completeHierarchyForm.productCategory}
+                      onChange={(e) => setCompleteHierarchyForm({ ...completeHierarchyForm, productCategory: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                      placeholder="e.g., Electronics"
+                    />
+                    {errors.productCategory && (
+                      <p className="mt-1 text-xs text-red-600">{errors.productCategory}</p>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Item Category <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={completeHierarchyForm.itemCategory}
+                      onChange={(e) => setCompleteHierarchyForm({ ...completeHierarchyForm, itemCategory: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                      placeholder="e.g., Laptops"
+                    />
+                    {errors.itemCategory && (
+                      <p className="mt-1 text-xs text-red-600">{errors.itemCategory}</p>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Sub Category <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={completeHierarchyForm.subCategory}
+                      onChange={(e) => setCompleteHierarchyForm({ ...completeHierarchyForm, subCategory: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                      placeholder="e.g., Gaming Laptops"
+                    />
+                    {errors.subCategory && (
+                      <p className="mt-1 text-xs text-red-600">{errors.subCategory}</p>
+                    )}
+                  </div>
+                </div>
+              )}
 
               {/* Multiple Mode Toggle for Item and Sub Categories */}
               {(formType === 'item' || formType === 'sub') && !editingRow && (
