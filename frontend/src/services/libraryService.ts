@@ -243,7 +243,7 @@ export const libraryService = {
   },
   getProductCategoryById: async (id: number) => {
     const response = await api.get(`/yourproductcategories/${id}`);
-    return response.data;
+    return response;
   },
   createYourProductCategory: async (data: any) => {
     const response = await api.post('/yourproductcategories', data);
@@ -257,7 +257,7 @@ export const libraryService = {
   },
   getItemCategoryById: async (id: number) => {
     const response = await api.get(`/youritemcategories/${id}`);
-    return response.data;
+    return response;
   },
   createYourItemCategory: async (data: any) => {
     const response = await api.post('/youritemcategories', data);
@@ -271,7 +271,7 @@ export const libraryService = {
   },
   getSubCategoryById: async (id: number) => {
     const response = await api.get(`/yoursubcategories/${id}`);
-    return response.data;
+    return response;
   },
   createYourSubCategory: async (data: any) => {
     const response = await api.post('/yoursubcategories', data);
