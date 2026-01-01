@@ -7,6 +7,7 @@ import * as XLSX from 'xlsx';
 interface Transportor {
   id: number;
   name: string;
+  subVendor: string;
   contactPerson?: string;
   contactNumber?: string;
   email?: string;
@@ -35,6 +36,7 @@ const TransportorTab: React.FC<TransportorTabProps> = ({ transportors, loading, 
 
   const [transportorForm, setTransportorForm] = useState<Partial<Transportor>>({
     name: '',
+    subVendor: '',
     contactPerson: '',
     contactNumber: '',
     email: '',
@@ -47,6 +49,7 @@ const TransportorTab: React.FC<TransportorTabProps> = ({ transportors, loading, 
     const searchLower = search.toLowerCase();
     return (
       transportor.name?.toLowerCase().includes(searchLower) ||
+      transportor.subVendor?.toLowerCase().includes(searchLower) ||
       transportor.contactPerson?.toLowerCase().includes(searchLower) ||
       transportor.contactNumber?.toLowerCase().includes(searchLower) ||
       transportor.email?.toLowerCase().includes(searchLower) ||
@@ -59,6 +62,7 @@ const TransportorTab: React.FC<TransportorTabProps> = ({ transportors, loading, 
       setEditingTransportor(transportor);
       setTransportorForm({
         name: transportor.name || '',
+        subVendor: transportor.subVendor || '',
         contactPerson: transportor.contactPerson || '',
         contactNumber: transportor.contactNumber || '',
         email: transportor.email || '',
@@ -70,6 +74,7 @@ const TransportorTab: React.FC<TransportorTabProps> = ({ transportors, loading, 
       setEditingTransportor(null);
       setTransportorForm({
         name: '',
+        subVendor: '',
         contactPerson: '',
         contactNumber: '',
         email: '',
@@ -90,9 +95,12 @@ const TransportorTab: React.FC<TransportorTabProps> = ({ transportors, loading, 
 
   const handleSave = async () => {
     const newErrors: Record<string, string> = {};
-    
+
     if (!validateRequired(transportorForm.name || '')) {
       newErrors.name = 'Transporter Name is required';
+    }
+    if (!validateRequired(transportorForm.subVendor || '')) {
+      newErrors.subVendor = 'Sub Vendor is required';
     }
     if (!validateRequired(transportorForm.contactPerson || '')) {
       newErrors.contactPerson = 'Contact Person Name is required';
@@ -109,7 +117,7 @@ const TransportorTab: React.FC<TransportorTabProps> = ({ transportors, loading, 
     if (transportorForm.gstNumber && transportorForm.gstNumber.trim() && !validateGST(transportorForm.gstNumber)) {
       newErrors.gstNumber = 'Invalid GST number format';
     }
-    
+
     if (transportorForm.contactNumber && !validatePhone(transportorForm.contactNumber)) {
       newErrors.contactNumber = 'Invalid phone number (10 digits)';
     }
@@ -153,6 +161,7 @@ const TransportorTab: React.FC<TransportorTabProps> = ({ transportors, loading, 
     const templateData = [
       {
         'Transporter Name': '',
+        'Sub Vendor': '',
         'Contact Person Name': '',
         'Contact Number': '',
         'Email ID': '',
@@ -164,10 +173,11 @@ const TransportorTab: React.FC<TransportorTabProps> = ({ transportors, loading, 
 
     const wb = XLSX.utils.book_new();
     const ws = XLSX.utils.json_to_sheet(templateData);
-    
+
     // Set column widths
     ws['!cols'] = [
       { wch: 25 }, // Transporter Name
+      { wch: 20 }, // Sub Vendor
       { wch: 20 }, // Contact Person Name
       { wch: 15 }, // Contact Number
       { wch: 25 }, // Email ID
@@ -271,6 +281,7 @@ const TransportorTab: React.FC<TransportorTabProps> = ({ transportors, loading, 
               <thead className="bg-gray-50 border-b border-gray-200">
                 <tr>
                   <th className="px-3 py-2 text-left text-xs font-semibold text-gray-700 uppercase">Transporter Name</th>
+                  <th className="px-3 py-2 text-left text-xs font-semibold text-gray-700 uppercase">Sub Vendor</th>
                   <th className="px-3 py-2 text-left text-xs font-semibold text-gray-700 uppercase">Contact Person</th>
                   <th className="px-3 py-2 text-left text-xs font-semibold text-gray-700 uppercase">Contact Number</th>
                   <th className="px-3 py-2 text-left text-xs font-semibold text-gray-700 uppercase">Email</th>
@@ -282,12 +293,13 @@ const TransportorTab: React.FC<TransportorTabProps> = ({ transportors, loading, 
               <tbody className="divide-y divide-gray-200">
                 {filteredTransportors.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="px-3 py-6 text-center text-gray-500 text-xs">No transporters found</td>
+                    <td colSpan={8} className="px-3 py-6 text-center text-gray-500 text-xs">No transporters found</td>
                   </tr>
                 ) : (
                   filteredTransportors.map((transportor) => (
                     <tr key={transportor.id} className="hover:bg-gray-50">
                       <td className="px-3 py-2 text-xs font-medium text-gray-900">{transportor.name}</td>
+                      <td className="px-3 py-2 text-xs text-gray-700">{transportor.subVendor || '-'}</td>
                       <td className="px-3 py-2 text-xs text-gray-700">{transportor.contactPerson || '-'}</td>
                       <td className="px-3 py-2 text-xs text-gray-700">{transportor.contactNumber || '-'}</td>
                       <td className="px-3 py-2 text-xs text-gray-700">{transportor.email || '-'}</td>
@@ -356,6 +368,20 @@ const TransportorTab: React.FC<TransportorTabProps> = ({ transportors, loading, 
                     }`}
                   />
                   {errors.name && <p className="text-red-500 text-xs mt-1">{errors.name}</p>}
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Sub Vendor <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={transportorForm.subVendor}
+                    onChange={(e) => setTransportorForm({ ...transportorForm, subVendor: e.target.value })}
+                    className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${
+                      errors.subVendor ? 'border-red-500' : 'border-gray-300'
+                    }`}
+                  />
+                  {errors.subVendor && <p className="text-red-500 text-xs mt-1">{errors.subVendor}</p>}
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
