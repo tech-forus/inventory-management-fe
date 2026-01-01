@@ -663,7 +663,7 @@ const CategoryMasterTab: React.FC<CategoryMasterTabProps> = ({
             className="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2 text-sm"
           >
             <Plus className="w-4 h-4" />
-            Add Product
+            Add Category
           </button>
           <button
             onClick={handleDownloadTemplate}
