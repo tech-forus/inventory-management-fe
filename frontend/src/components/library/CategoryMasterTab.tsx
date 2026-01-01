@@ -164,24 +164,10 @@ const CategoryMasterTab: React.FC<CategoryMasterTabProps> = ({
   const filteredRows = unifiedRows.filter((row) => {
     const searchLower = search.toLowerCase();
 
-    // Always filter out incomplete rows (hide rows with missing or placeholder values)
-    const hasCompleteHierarchy =
-      row.productCategory &&
-      row.productCategory !== '-' &&
-      row.productCategory.trim() !== '' &&
-      row.itemCategory &&
-      row.itemCategory !== '-' &&
-      row.itemCategory.trim() !== '' &&
-      row.subCategory &&
-      row.subCategory !== '-' &&
-      row.subCategory.trim() !== '';
-
-    if (!hasCompleteHierarchy) return false;
-
-    // If no search term, show all complete rows
+    // If no search term, show all rows (including incomplete hierarchies)
     if (!searchLower) return true;
 
-    // Filter based on search term (only on complete rows)
+    // Filter based on search term
     return (
       row.productCategory.toLowerCase().includes(searchLower) ||
       row.itemCategory.toLowerCase().includes(searchLower) ||
