@@ -1056,15 +1056,28 @@ export default function AddManageCategoriesPage() {
                           key={hashtag}
                           type="button"
                           onClick={() => {
-                            const existingCategory = productCategories.find(
-                              (p) => p.name.toUpperCase() === hashtag.toUpperCase()
+                            const normalized = normalizeName(hashtag);
+                            const isAlreadySelected = productSelected.some(
+                              (t) => !t.isDeleted && t.name.toUpperCase() === normalized.toUpperCase()
                             );
-                            if (existingCategory) {
-                              toggleSelectExistingProduct(existingCategory);
+
+                            if (isAlreadySelected) {
+                              // Deselect: mark as deleted
+                              setProductSelected((prev) =>
+                                prev.map((t) =>
+                                  !t.isDeleted && t.name.toUpperCase() === normalized.toUpperCase()
+                                    ? { ...t, isDeleted: true }
+                                    : t
+                                )
+                              );
                             } else {
-                              // Add as new category
-                              const normalized = normalizeName(hashtag);
-                              if (!productSelected.some((t) => !t.isDeleted && t.name.toUpperCase() === normalized.toUpperCase())) {
+                              // Select: check if exists in DB or add as new
+                              const existingCategory = productCategories.find(
+                                (p) => p.name.toUpperCase() === normalized.toUpperCase()
+                              );
+                              if (existingCategory) {
+                                setProductSelected((prev) => [...prev, existingCategory]);
+                              } else {
                                 setProductSelected((prev) => [...prev, { name: normalized, isNew: true }]);
                               }
                             }
