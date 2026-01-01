@@ -298,7 +298,7 @@ const Sidebar: React.FC = () => {
               <span className="text-[9px] font-medium leading-[1.3] text-slate-400 uppercase tracking-wide">
                 {user?.role === 'super_admin' ? 'SuperAdmin' : user?.role === 'admin' ? 'Admin' : 'User'}
               </span>
-              <span className="text-[8px] font-medium leading-[1.3] text-slate-500 truncate">
+              <span className="text-[9px] font-medium leading-[1.3] text-slate-500 truncate">
                 Company ID: {user?.companyId || 'N/A'}
               </span>
             </div>
