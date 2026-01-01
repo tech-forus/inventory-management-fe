@@ -199,22 +199,47 @@ export default function AddManageCategoriesPage() {
   // If we arrived from Category Master "Edit", preselect the relevant hierarchy.
   useEffect(() => {
     const st = pendingNavStateRef.current;
-    if (!st?.fromCategoryMaster) return;
+    if (!st?.fromCategoryMaster || !st?.editMode) return;
     if (!productCategories.length) return;
 
     const pcId = Number(st.productCategoryId) || null;
     const icId = Number(st.itemCategoryId) || null;
+    const scId = Number(st.subCategoryId) || null;
 
-    if (pcId) {
+    const pcName = st.productCategoryName;
+    const icName = st.itemCategoryName;
+    const scName = st.subCategoryName;
+
+    // Step 1: Set Product Category
+    if (pcId && pcName) {
       const pc = productCategories.find((p) => p.id === pcId);
       if (pc) {
         setSelectedProduct(pc);
+        setProductSelected([{ id: pcId, name: pcName, originalName: pcName }]);
         setStep(2);
-      }
-    }
 
-    if (icId) {
-      setStep(3);
+        // Step 2: Load and Set Item Category
+        if (icId && icName) {
+          loadItems(pcId).then(() => {
+            setItemsByProduct((prev) => ({
+              ...prev,
+              [pcId]: [{ id: icId, name: icName, originalName: icName }]
+            }));
+            setStep(3);
+
+            // Step 3: Load and Set Sub Category
+            if (scId && scName) {
+              loadSubs(icId).then(() => {
+                const key = getKey(pcId, icId);
+                setSubsByProductItem((prev) => ({
+                  ...prev,
+                  [key]: [{ id: scId, name: scName, originalName: scName }]
+                }));
+              });
+            }
+          });
+        }
+      }
     }
 
     // Consume once

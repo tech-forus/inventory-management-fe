@@ -731,10 +731,14 @@ const CategoryMasterTab: React.FC<CategoryMasterTabProps> = ({
                             navigate('/app/library/categories/manage', {
                               state: {
                                 fromCategoryMaster: true,
+                                editMode: true,
                                 type: row.type,
                                 productCategoryId: row.productCategoryId,
                                 itemCategoryId: row.itemCategoryId,
                                 subCategoryId: row.subCategoryId,
+                                productCategoryName: row.productCategory,
+                                itemCategoryName: row.itemCategory,
+                                subCategoryName: row.subCategory,
                               },
                             })
                           }
