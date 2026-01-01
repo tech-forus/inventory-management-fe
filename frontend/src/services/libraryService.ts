@@ -241,6 +241,10 @@ export const libraryService = {
   getYourProductCategories: async () => {
     return await cachedGet('/yourproductcategories', undefined, { ttlMs: 24 * 60 * 60 * 1000 });
   },
+  getProductCategoryById: async (id: number) => {
+    const response = await api.get(`/yourproductcategories/${id}`);
+    return response.data;
+  },
   createYourProductCategory: async (data: any) => {
     const response = await api.post('/yourproductcategories', data);
     invalidateCachePrefix('GET:/yourproductcategories');
@@ -251,6 +255,10 @@ export const libraryService = {
     const params = productCategoryId ? { productCategoryId } : {};
     return await cachedGet('/youritemcategories', { params }, { ttlMs: 24 * 60 * 60 * 1000 });
   },
+  getItemCategoryById: async (id: number) => {
+    const response = await api.get(`/youritemcategories/${id}`);
+    return response.data;
+  },
   createYourItemCategory: async (data: any) => {
     const response = await api.post('/youritemcategories', data);
     invalidateCachePrefix('GET:/youritemcategories');
@@ -260,6 +268,10 @@ export const libraryService = {
   getYourSubCategories: async (itemCategoryId?: number) => {
     const params = itemCategoryId ? { itemCategoryId } : {};
     return await cachedGet('/yoursubcategories', { params }, { ttlMs: 24 * 60 * 60 * 1000 });
+  },
+  getSubCategoryById: async (id: number) => {
+    const response = await api.get(`/yoursubcategories/${id}`);
+    return response.data;
   },
   createYourSubCategory: async (data: any) => {
     const response = await api.post('/yoursubcategories', data);

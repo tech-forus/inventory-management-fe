@@ -741,21 +741,7 @@ const CategoryMasterTab: React.FC<CategoryMasterTabProps> = ({
                     <td className="px-3 py-2 text-xs text-center">
                       <div className="flex items-center justify-center gap-2">
                         <button
-                          onClick={() =>
-                            navigate('/app/library/categories/manage', {
-                              state: {
-                                fromCategoryMaster: true,
-                                editMode: true,
-                                type: row.type,
-                                productCategoryId: row.productCategoryId,
-                                itemCategoryId: row.itemCategoryId,
-                                subCategoryId: row.subCategoryId,
-                                productCategoryName: row.productCategory,
-                                itemCategoryName: row.itemCategory,
-                                subCategoryName: row.subCategory,
-                              },
-                            })
-                          }
+                          onClick={() => navigate(`/app/library/categories/edit/${row.id}`)}
                           className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
                           title="Edit"
                         >

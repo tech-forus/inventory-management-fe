@@ -27,6 +27,7 @@ const ReportsPage = lazy(() => import('./pages/ReportsPage'))
 const FinancePage = lazy(() => import('./pages/FinancePage'))
 const LibraryPage = lazy(() => import('./pages/LibraryPage'))
 const AddManageCategoriesPage = lazy(() => import('./pages/AddManageCategoriesPage'))
+const SimpleCategoryEditPage = lazy(() => import('./pages/SimpleCategoryEditPage'))
 const AccessControlPage = lazy(() => import('./pages/AccessControlPage'))
 const InviteUserPage = lazy(() => import('./pages/InviteUserPage'))
 const ProfilePage = lazy(() => import('./pages/ProfilePage'))
@@ -217,6 +218,13 @@ function App() {
             <AuthGate moduleKey="library" action="view">
               <AppLayout>
                 <AddManageCategoriesPage />
+              </AppLayout>
+            </AuthGate>
+          } />
+          <Route path="/app/library/categories/edit/:id" element={
+            <AuthGate moduleKey="library" action="view">
+              <AppLayout>
+                <SimpleCategoryEditPage />
               </AppLayout>
             </AuthGate>
           } />
