@@ -59,22 +59,22 @@ export default function SimpleCategoryEditPage() {
         const subCat = subRes.data?.data || subRes.data;
         console.log('Sub category data:', subCat);
 
-        if (!subCat) {
-          throw new Error('Sub category not found');
+        if (!subCat || !subCat.itemCategoryId) {
+          throw new Error('Sub category not found or missing itemCategoryId');
         }
 
         // Fetch parent item category
-        const itemRes = await libraryService.getItemCategoryById(subCat.itemCategoryId || subCat.item_category_id);
+        const itemRes = await libraryService.getItemCategoryById(subCat.itemCategoryId);
         console.log('Item category response:', itemRes);
         const itemCat = itemRes.data?.data || itemRes.data;
         console.log('Item category data:', itemCat);
 
-        if (!itemCat) {
-          throw new Error('Item category not found');
+        if (!itemCat || !itemCat.productCategoryId) {
+          throw new Error('Item category not found or missing productCategoryId');
         }
 
         // Fetch grandparent product category
-        const prodRes = await libraryService.getProductCategoryById(itemCat.productCategoryId || itemCat.product_category_id);
+        const prodRes = await libraryService.getProductCategoryById(itemCat.productCategoryId);
         console.log('Product category response:', prodRes);
         const prodCat = prodRes.data?.data || prodRes.data;
         console.log('Product category data:', prodCat);
@@ -96,12 +96,12 @@ export default function SimpleCategoryEditPage() {
         console.log('Item category response:', itemRes);
         const itemCat = itemRes.data?.data || itemRes.data;
 
-        if (!itemCat) {
-          throw new Error('Item category not found');
+        if (!itemCat || !itemCat.productCategoryId) {
+          throw new Error('Item category not found or missing productCategoryId');
         }
 
         // Fetch parent product category
-        const prodRes = await libraryService.getProductCategoryById(itemCat.productCategoryId || itemCat.product_category_id);
+        const prodRes = await libraryService.getProductCategoryById(itemCat.productCategoryId);
         console.log('Product category response:', prodRes);
         const prodCat = prodRes.data?.data || prodRes.data;
 
