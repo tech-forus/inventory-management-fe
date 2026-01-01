@@ -936,62 +936,6 @@ export default function AddManageCategoriesPage() {
             )}
                 </div>
 
-                {/* Quick Select Hashtags */}
-                <div className="mt-4">
-                  <div className="text-xs text-gray-600 mb-2">Quick Select:</div>
-                  <div className="flex flex-wrap gap-2 overflow-x-auto pb-2">
-                    {[
-                      "Raw Materials",
-                      "Semi-Finished Goods",
-                      "Finished Goods",
-                      "Components & Parts",
-                      "Consumables",
-                      "Packaging Materials",
-                      "Machinery & Equipment",
-                      "Electrical & Electronics",
-                      "Construction Materials",
-                      "Hazardous Goods",
-                      "Perishable Goods",
-                      "Pharmaceuticals & Medical",
-                      "Textiles & Apparel",
-                      "Scrap & Recyclables",
-                      "Documents & Valuables"
-                    ].map((hashtag) => {
-                      const isSelected = productSelected.some(
-                        (t) => !t.isDeleted && t.name.toUpperCase() === hashtag.toUpperCase()
-                      );
-                      return (
-                        <button
-                          key={hashtag}
-                          type="button"
-                          onClick={() => {
-                            const existingCategory = productCategories.find(
-                              (p) => p.name.toUpperCase() === hashtag.toUpperCase()
-                            );
-                            if (existingCategory) {
-                              toggleSelectExistingProduct(existingCategory);
-                            } else {
-                              // Add as new category
-                              const normalized = normalizeName(hashtag);
-                              if (!productSelected.some((t) => !t.isDeleted && t.name.toUpperCase() === normalized.toUpperCase())) {
-                                setProductSelected((prev) => [...prev, { name: normalized, isNew: true }]);
-                              }
-                            }
-                          }}
-                          className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-medium transition-all whitespace-nowrap ${
-                            isSelected
-                              ? 'bg-blue-600 text-white border border-blue-600'
-                              : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50 hover:border-gray-400'
-                          }`}
-                        >
-                          <span className="text-base">#</span>
-                          {hashtag}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-
                 <div className="mt-4">
                   <label className="text-xs text-gray-600">Product Category</label>
                   <div className="mt-1 relative autocomplete-container">
@@ -1080,6 +1024,62 @@ export default function AddManageCategoriesPage() {
                         )}
                       </div>
                     )}
+                  </div>
+                </div>
+
+                {/* Quick Select Hashtags */}
+                <div className="mt-4">
+                  <div className="text-xs text-gray-600 mb-2">Quick Select:</div>
+                  <div className="flex flex-wrap gap-2 overflow-x-auto pb-2">
+                    {[
+                      "Raw Materials",
+                      "Semi-Finished Goods",
+                      "Finished Goods",
+                      "Components & Parts",
+                      "Consumables",
+                      "Packaging Materials",
+                      "Machinery & Equipment",
+                      "Electrical & Electronics",
+                      "Construction Materials",
+                      "Hazardous Goods",
+                      "Perishable Goods",
+                      "Pharmaceuticals & Medical",
+                      "Textiles & Apparel",
+                      "Scrap & Recyclables",
+                      "Documents & Valuables"
+                    ].map((hashtag) => {
+                      const isSelected = productSelected.some(
+                        (t) => !t.isDeleted && t.name.toUpperCase() === hashtag.toUpperCase()
+                      );
+                      return (
+                        <button
+                          key={hashtag}
+                          type="button"
+                          onClick={() => {
+                            const existingCategory = productCategories.find(
+                              (p) => p.name.toUpperCase() === hashtag.toUpperCase()
+                            );
+                            if (existingCategory) {
+                              toggleSelectExistingProduct(existingCategory);
+                            } else {
+                              // Add as new category
+                              const normalized = normalizeName(hashtag);
+                              if (!productSelected.some((t) => !t.isDeleted && t.name.toUpperCase() === normalized.toUpperCase())) {
+                                setProductSelected((prev) => [...prev, { name: normalized, isNew: true }]);
+                              }
+                            }
+                          }}
+                          className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-medium transition-all whitespace-nowrap ${
+                            isSelected
+                              ? 'bg-blue-700 text-white border border-blue-700'
+                              : 'bg-blue-600 text-white border border-blue-600 hover:bg-blue-700'
+                          }`}
+                        >
+                          <span className="text-base">#</span>
+                          {hashtag}
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
 
