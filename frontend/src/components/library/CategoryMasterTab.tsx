@@ -164,7 +164,15 @@ const CategoryMasterTab: React.FC<CategoryMasterTabProps> = ({
   const filteredRows = unifiedRows.filter((row) => {
     const searchLower = search.toLowerCase();
 
-    // If no search term, show all rows
+    // Only show rows with complete hierarchy (all three categories present)
+    const hasAllThree =
+      !!row.productCategory && row.productCategory !== '-' &&
+      !!row.itemCategory && row.itemCategory !== '-' &&
+      !!row.subCategory && row.subCategory !== '-';
+
+    if (!hasAllThree) return false;
+
+    // If no search term, show all complete rows
     if (!searchLower) return true;
 
     // Filter based on search term
