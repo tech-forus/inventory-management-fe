@@ -285,13 +285,23 @@ const Sidebar: React.FC = () => {
     <>
       {/* Sidebar */}
       <div className={`w-[216px] h-screen bg-slate-900 flex flex-col fixed left-0 top-0 overflow-hidden transition-transform duration-300 z-40 ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}>
-        {/* Logo Area */}
+        {/* User Info Area */}
         <div className="p-[18px] border-b border-slate-700/50">
           <div className="flex items-center gap-[9px]">
-            <div className="w-[30px] h-[30px] bg-indigo-600 rounded-lg flex items-center justify-center">
-              <Square className="w-[18px] h-[18px] text-white" />
+            <div className="w-[30px] h-[30px] bg-indigo-600 rounded-lg flex items-center justify-center flex-shrink-0">
+              <User className="w-[18px] h-[18px] text-white" />
             </div>
-            <span className="text-[15px] font-black leading-[1.2] text-white tracking-tight">Forusbiz</span>
+            <div className="flex flex-col min-w-0 flex-1">
+              <span className="text-[13px] font-bold leading-[1.2] text-white truncate">
+                {user?.fullName || 'User'}
+              </span>
+              <span className="text-[9px] font-medium leading-[1.3] text-slate-400 uppercase tracking-wide">
+                {user?.role === 'super_admin' ? 'SuperAdmin' : user?.role === 'admin' ? 'Admin' : 'User'}
+              </span>
+              <span className="text-[8px] font-medium leading-[1.3] text-slate-500 truncate">
+                Company ID: {user?.companyId || 'N/A'}
+              </span>
+            </div>
           </div>
         </div>
 
