@@ -11,6 +11,11 @@ interface FormData {
   itemCategoryId?: number;
 }
 
+interface CategoryType {
+  type: 'product' | 'item' | 'sub';
+  numericId: number;
+}
+
 export default function SimpleCategoryEditPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -25,6 +30,8 @@ export default function SimpleCategoryEditPage() {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [categoryType, setCategoryType] = useState<CategoryType | null>(null);
+  const [newSubCategoryName, setNewSubCategoryName] = useState('');
 
   useEffect(() => {
     if (id) {
@@ -41,6 +48,7 @@ export default function SimpleCategoryEditPage() {
     try {
       // Parse the ID format: "sub-123" or "item-123" or "product-123"
       const [type, numericId] = id.split('-');
+      setCategoryType({ type: type as 'product' | 'item' | 'sub', numericId: Number(numericId) });
 
       console.log('Fetching category:', { type, numericId, id });
 
@@ -180,6 +188,13 @@ export default function SimpleCategoryEditPage() {
           name: formData.itemCategory,
           productCategoryId: formData.productCategoryId
         });
+        // If subcategory name is provided and item category doesn't have one, create it
+        if (newSubCategoryName.trim() && formData.subCategory === '-') {
+          await libraryService.createYourSubCategory({
+            name: newSubCategoryName.trim(),
+            itemCategoryId: formData.itemCategoryId!
+          });
+        }
       } else if (type === 'product') {
         await libraryService.updateYourProductCategory(Number(numericId), {
           name: formData.productCategory
@@ -230,50 +245,88 @@ export default function SimpleCategoryEditPage() {
       )}
 
       <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow p-6 space-y-6">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Product Category
-          </label>
-          <input
-            type="text"
-            name="productCategory"
-            value={formData.productCategory}
-            onChange={handleChange}
-            disabled={formData.productCategory === '-'}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
-            required
-          />
-        </div>
+        {/* Product Category - Only show and allow editing name when editing product category */}
+        {categoryType?.type === 'product' && (
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Product Category Name <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              name="productCategory"
+              value={formData.productCategory}
+              onChange={handleChange}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              required
+            />
+          </div>
+        )}
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Item Category
-          </label>
-          <input
-            type="text"
-            name="itemCategory"
-            value={formData.itemCategory}
-            onChange={handleChange}
-            disabled={formData.itemCategory === '-'}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
-            required={formData.itemCategory !== '-'}
-          />
-        </div>
+        {/* Product Category - Show as read-only when editing item category */}
+        {categoryType?.type === 'item' && (
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Product Category
+            </label>
+            <input
+              type="text"
+              value={formData.productCategory}
+              disabled
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-100 text-gray-700 cursor-not-allowed"
+            />
+          </div>
+        )}
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Sub Category
-          </label>
-          <input
-            type="text"
-            name="subCategory"
-            value={formData.subCategory}
-            onChange={handleChange}
-            disabled={formData.subCategory === '-'}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
-            required={formData.subCategory !== '-'}
-          />
-        </div>
+        {/* Item Category - Only show when editing item category */}
+        {categoryType?.type === 'item' && (
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Item Category Name <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              name="itemCategory"
+              value={formData.itemCategory}
+              onChange={handleChange}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              required
+            />
+          </div>
+        )}
+
+        {/* Sub Category - Show when editing sub category */}
+        {categoryType?.type === 'sub' && (
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Sub Category Name <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              name="subCategory"
+              value={formData.subCategory}
+              onChange={handleChange}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              required
+            />
+          </div>
+        )}
+
+        {/* Add subcategory field when editing item category that doesn't have one */}
+        {categoryType?.type === 'item' && formData.subCategory === '-' && (
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Sub Category Name (Optional)
+            </label>
+            <input
+              type="text"
+              value={newSubCategoryName}
+              onChange={(e) => setNewSubCategoryName(e.target.value)}
+              placeholder="Enter sub category name to add"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            />
+            <p className="text-xs text-gray-500 mt-1">Leave empty if you don't want to add a subcategory</p>
+          </div>
+        )}
 
         <div className="flex gap-3 pt-4">
           <button
