@@ -1060,6 +1060,8 @@ const CategoryMasterTab: React.FC<CategoryMasterTabProps> = ({
                         {errors.name && <p className="text-red-500 text-xs mt-1">{errors.name}</p>}
                       </div>
                     )}
+                  </>
+                    )}
 
                     {formType === 'sub' && (
                       <>
