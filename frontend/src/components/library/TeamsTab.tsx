@@ -124,6 +124,11 @@ const TeamsTab: React.FC<TeamsTabProps> = ({ teams, loading, onRefresh }) => {
     }
   };
 
+  // Get available designations for selected department
+  const availableDesignations = teamForm.department 
+    ? departmentDesignations[teamForm.department] || []
+    : [];
+
   // Filter departments based on input
   const filteredDepartments = departments.filter(dept =>
     dept.toLowerCase().includes(departmentInput.toLowerCase())
@@ -189,11 +194,6 @@ const TeamsTab: React.FC<TeamsTabProps> = ({ teams, loading, onRefresh }) => {
       }));
     }
   };
-
-  // Get available designations for selected department
-  const availableDesignations = teamForm.department 
-    ? departmentDesignations[teamForm.department] || []
-    : [];
 
   const handleSave = async () => {
     const newErrors: Record<string, string> = {};
