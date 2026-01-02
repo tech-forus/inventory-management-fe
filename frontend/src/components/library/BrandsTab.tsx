@@ -231,11 +231,11 @@ const BrandsTab: React.FC<BrandsTabProps> = ({ brands, loading, onRefresh }) => 
               <table className="w-full">
                 <thead className="bg-gray-50 border-b border-gray-200">
                   <tr>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Brand Name</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Description</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Status</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Created Date</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Actions</th>
+                    <th className="px-4 py-3 text-center text-xs font-semibold text-gray-700 uppercase">Brand Name</th>
+                    <th className="px-4 py-3 text-center text-xs font-semibold text-gray-700 uppercase">Description</th>
+                    <th className="px-4 py-3 text-center text-xs font-semibold text-gray-700 uppercase">Status</th>
+                    <th className="px-4 py-3 text-center text-xs font-semibold text-gray-700 uppercase">Created Date</th>
+                    <th className="px-4 py-3 text-center text-xs font-semibold text-gray-700 uppercase">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200">
@@ -246,20 +246,20 @@ const BrandsTab: React.FC<BrandsTabProps> = ({ brands, loading, onRefresh }) => 
                   ) : (
                     filteredBrands.map((brand) => (
                       <tr key={brand.id} className="hover:bg-gray-50">
-                        <td className="px-4 py-3 text-sm font-medium text-gray-900">{brand.name}</td>
-                        <td className="px-4 py-3 text-sm text-gray-700">{brand.description || '-'}</td>
-                        <td className="px-4 py-3 text-sm">
+                        <td className="px-4 py-3 text-sm font-medium text-gray-900 text-center">{brand.name}</td>
+                        <td className="px-4 py-3 text-sm text-gray-700 text-center">{brand.description || '-'}</td>
+                        <td className="px-4 py-3 text-sm text-center">
                           <span className={`px-2 py-1 text-xs font-semibold rounded ${
                             brand.isActive ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
                           }`}>
                             {brand.isActive ? 'Active' : 'Inactive'}
                           </span>
                         </td>
-                        <td className="px-4 py-3 text-sm text-gray-700">
+                        <td className="px-4 py-3 text-sm text-gray-700 text-center">
                           {brand.createdAt ? formatDate(brand.createdAt) : '-'}
                         </td>
-                        <td className="px-4 py-3 text-sm">
-                          <div className="flex items-center gap-2">
+                        <td className="px-4 py-3 text-sm text-center">
+                          <div className="flex items-center justify-center gap-2">
                             <button
                               onClick={() => handleOpenDialog(brand)}
                               className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg"

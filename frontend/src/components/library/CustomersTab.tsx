@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { Plus, Search, Edit, Trash2, X, Upload, Download } from 'lucide-react';
+import { Plus, Search, Edit, Trash2, X, Upload, Download, Eye } from 'lucide-react';
 import { libraryService } from '../../services/libraryService';
 import { validateRequired, validateEmail, validatePhone, validateGST } from '../../utils/validators';
 import * as XLSX from 'xlsx';
@@ -13,6 +13,8 @@ interface Customer {
   email?: string;
   gstNumber?: string;
   address?: string;
+  personalAddress?: string;
+  dateOfBirth?: string;
   city?: string;
   state?: string;
   pin?: string;
@@ -29,6 +31,7 @@ const CustomersTab: React.FC<CustomersTabProps> = ({ customers, loading, onRefre
   const [search, setSearch] = useState('');
   const [showDialog, setShowDialog] = useState(false);
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
+  const [viewingCustomer, setViewingCustomer] = useState<Customer | null>(null);
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -42,6 +45,8 @@ const CustomersTab: React.FC<CustomersTabProps> = ({ customers, loading, onRefre
     email: '',
     gstNumber: '',
     address: '',
+    personalAddress: '',
+    dateOfBirth: '',
     city: '',
     state: '',
     pin: '',
@@ -74,6 +79,8 @@ const CustomersTab: React.FC<CustomersTabProps> = ({ customers, loading, onRefre
         email: customer.email || '',
         gstNumber: customer.gstNumber || '',
         address: customer.address || '',
+        personalAddress: customer.personalAddress || '',
+        dateOfBirth: customer.dateOfBirth || '',
         city: customer.city || '',
         state: customer.state || '',
         pin: customer.pin || '',
@@ -90,6 +97,8 @@ const CustomersTab: React.FC<CustomersTabProps> = ({ customers, loading, onRefre
         email: '',
         gstNumber: '',
         address: '',
+        personalAddress: '',
+        dateOfBirth: '',
         city: '',
         state: '',
         pin: '',
@@ -144,7 +153,7 @@ const CustomersTab: React.FC<CustomersTabProps> = ({ customers, loading, onRefre
       newErrors.state = 'State is required';
     }
     if (!validateRequired(customerForm.address || '')) {
-      newErrors.address = 'Address is required';
+      newErrors.address = 'Company Address is required';
     }
 
     if (Object.keys(newErrors).length > 0) {
@@ -309,15 +318,15 @@ const CustomersTab: React.FC<CustomersTabProps> = ({ customers, loading, onRefre
             <table className="w-full">
               <thead className="bg-gray-50 border-b border-gray-200">
                 <tr>
-                  <th className="px-3 py-2 text-left text-xs font-semibold text-gray-700 uppercase">Company Name</th>
-                  <th className="px-3 py-2 text-left text-xs font-semibold text-gray-700 uppercase">Contact Person</th>
-                  <th className="px-3 py-2 text-left text-xs font-semibold text-gray-700 uppercase">Phone</th>
-                  <th className="px-3 py-2 text-left text-xs font-semibold text-gray-700 uppercase">Email</th>
-                  <th className="px-3 py-2 text-left text-xs font-semibold text-gray-700 uppercase">GST Number</th>
-                  <th className="px-3 py-2 text-left text-xs font-semibold text-gray-700 uppercase">City</th>
-                  <th className="px-3 py-2 text-left text-xs font-semibold text-gray-700 uppercase">State</th>
-                  <th className="px-3 py-2 text-left text-xs font-semibold text-gray-700 uppercase">Status</th>
-                  <th className="px-3 py-2 text-left text-xs font-semibold text-gray-700 uppercase">Actions</th>
+                  <th className="px-3 py-2 text-center text-xs font-semibold text-gray-700 uppercase">Company Name</th>
+                  <th className="px-3 py-2 text-center text-xs font-semibold text-gray-700 uppercase">Contact Person</th>
+                  <th className="px-3 py-2 text-center text-xs font-semibold text-gray-700 uppercase">Phone</th>
+                  <th className="px-3 py-2 text-center text-xs font-semibold text-gray-700 uppercase">Email</th>
+                  <th className="px-3 py-2 text-center text-xs font-semibold text-gray-700 uppercase">GST Number</th>
+                  <th className="px-3 py-2 text-center text-xs font-semibold text-gray-700 uppercase">City</th>
+                  <th className="px-3 py-2 text-center text-xs font-semibold text-gray-700 uppercase">State</th>
+                  <th className="px-3 py-2 text-center text-xs font-semibold text-gray-700 uppercase">Status</th>
+                  <th className="px-3 py-2 text-center text-xs font-semibold text-gray-700 uppercase">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
@@ -328,22 +337,29 @@ const CustomersTab: React.FC<CustomersTabProps> = ({ customers, loading, onRefre
                 ) : (
                   filteredCustomers.map((customer) => (
                     <tr key={customer.id} className="hover:bg-gray-50">
-                      <td className="px-3 py-2 text-xs font-medium text-gray-900">{customer.name}</td>
-                      <td className="px-3 py-2 text-xs text-gray-700">{customer.contactPerson || '-'}</td>
-                      <td className="px-3 py-2 text-xs text-gray-700">{customer.phone || '-'}</td>
-                      <td className="px-3 py-2 text-xs text-gray-700">{customer.email || '-'}</td>
-                      <td className="px-3 py-2 text-xs text-gray-700">{customer.gstNumber || '-'}</td>
-                      <td className="px-3 py-2 text-xs text-gray-700">{customer.city || '-'}</td>
-                      <td className="px-3 py-2 text-xs text-gray-700">{customer.state || '-'}</td>
-                      <td className="px-3 py-2 text-xs">
+                      <td className="px-3 py-2 text-xs font-medium text-gray-900 text-center">{customer.name}</td>
+                      <td className="px-3 py-2 text-xs text-gray-700 text-center">{customer.contactPerson || '-'}</td>
+                      <td className="px-3 py-2 text-xs text-gray-700 text-center">{customer.phone || '-'}</td>
+                      <td className="px-3 py-2 text-xs text-gray-700 text-center">{customer.email || '-'}</td>
+                      <td className="px-3 py-2 text-xs text-gray-700 text-center">{customer.gstNumber || '-'}</td>
+                      <td className="px-3 py-2 text-xs text-gray-700 text-center">{customer.city || '-'}</td>
+                      <td className="px-3 py-2 text-xs text-gray-700 text-center">{customer.state || '-'}</td>
+                      <td className="px-3 py-2 text-xs text-center">
                         <span className={`px-2 py-1 text-xs font-semibold rounded ${
                           customer.isActive ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
                         }`}>
                           {customer.isActive ? 'Active' : 'Inactive'}
                         </span>
                       </td>
-                      <td className="px-3 py-2 text-xs">
-                        <div className="flex items-center gap-2">
+                      <td className="px-3 py-2 text-xs text-center">
+                        <div className="flex items-center justify-center gap-2">
+                          <button
+                            onClick={() => setViewingCustomer(customer)}
+                            className="p-2 text-green-600 hover:bg-green-50 rounded-lg"
+                            title="View Details"
+                          >
+                            <Eye className="w-4 h-4" />
+                          </button>
                           <button
                             onClick={() => handleOpenDialog(customer)}
                             className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg"
@@ -402,7 +418,7 @@ const CustomersTab: React.FC<CustomersTabProps> = ({ customers, loading, onRefre
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Contact Person <span className="text-red-500">*</span>
+                    Contact Person Name <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text"
@@ -413,6 +429,18 @@ const CustomersTab: React.FC<CustomersTabProps> = ({ customers, loading, onRefre
                     }`}
                   />
                   {errors.contactPerson && <p className="text-red-500 text-xs mt-1">{errors.contactPerson}</p>}
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Date of Birth
+                  </label>
+                  <input
+                    type="date"
+                    value={customerForm.dateOfBirth || ''}
+                    onChange={(e) => setCustomerForm({ ...customerForm, dateOfBirth: e.target.value })}
+                    max={new Date().toISOString().split('T')[0]}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
@@ -480,33 +508,35 @@ const CustomersTab: React.FC<CustomersTabProps> = ({ customers, loading, onRefre
                     {errors.whatsappNumber && <p className="text-red-500 text-xs mt-1">{errors.whatsappNumber}</p>}
                   </div>
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Email <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="email"
-                    value={customerForm.email}
-                    onChange={(e) => setCustomerForm({ ...customerForm, email: e.target.value })}
-                    className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${
-                      errors.email ? 'border-red-500' : 'border-gray-300'
-                    }`}
-                  />
-                  {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email}</p>}
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    GST Number <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    value={customerForm.gstNumber}
-                    onChange={(e) => setCustomerForm({ ...customerForm, gstNumber: e.target.value })}
-                    className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${
-                      errors.gstNumber ? 'border-red-500' : 'border-gray-300'
-                    }`}
-                  />
-                  {errors.gstNumber && <p className="text-red-500 text-xs mt-1">{errors.gstNumber}</p>}
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Email <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="email"
+                      value={customerForm.email}
+                      onChange={(e) => setCustomerForm({ ...customerForm, email: e.target.value })}
+                      className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${
+                        errors.email ? 'border-red-500' : 'border-gray-300'
+                      }`}
+                    />
+                    {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email}</p>}
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      GST Number <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={customerForm.gstNumber}
+                      onChange={(e) => setCustomerForm({ ...customerForm, gstNumber: e.target.value })}
+                      className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${
+                        errors.gstNumber ? 'border-red-500' : 'border-gray-300'
+                      }`}
+                    />
+                    {errors.gstNumber && <p className="text-red-500 text-xs mt-1">{errors.gstNumber}</p>}
+                  </div>
                 </div>
                 <div className="grid grid-cols-3 gap-4">
                   <div>
@@ -554,7 +584,7 @@ const CustomersTab: React.FC<CustomersTabProps> = ({ customers, loading, onRefre
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Address <span className="text-red-500">*</span>
+                    Company Address <span className="text-red-500">*</span>
                   </label>
                   <textarea
                     value={customerForm.address}
@@ -565,6 +595,17 @@ const CustomersTab: React.FC<CustomersTabProps> = ({ customers, loading, onRefre
                     }`}
                   />
                   {errors.address && <p className="text-red-500 text-xs mt-1">{errors.address}</p>}
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Personal Address
+                  </label>
+                  <textarea
+                    value={customerForm.personalAddress || ''}
+                    onChange={(e) => setCustomerForm({ ...customerForm, personalAddress: e.target.value })}
+                    rows={3}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  />
                 </div>
                 <div className="flex items-center">
                   <input
@@ -592,6 +633,95 @@ const CustomersTab: React.FC<CustomersTabProps> = ({ customers, loading, onRefre
                   className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
                 >
                   {saving ? 'Saving...' : editingCustomer ? 'Update' : 'Save'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* View Details Modal */}
+      {viewingCustomer && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-3xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              <div className="flex justify-between items-center mb-8">
+                <h2 className="text-[24px] font-semibold text-gray-900">Customer Details</h2>
+                <button
+                  onClick={() => setViewingCustomer(null)}
+                  className="text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+              <div className="grid grid-cols-2 gap-6">
+                <div className="mb-5">
+                  <label className="block text-[13px] font-semibold text-gray-500 uppercase tracking-wider mb-2">Company Name</label>
+                  <p className="text-[16px] font-medium text-gray-900 pb-2 border-b border-gray-200">{viewingCustomer.name}</p>
+                </div>
+                <div className="mb-5">
+                  <label className="block text-[13px] font-semibold text-gray-500 uppercase tracking-wider mb-2">Contact Person Name</label>
+                  <p className="text-[16px] font-medium text-gray-900 pb-2 border-b border-gray-200">{viewingCustomer.contactPerson || '-'}</p>
+                </div>
+                <div className="mb-5">
+                  <label className="block text-[13px] font-semibold text-gray-500 uppercase tracking-wider mb-2">Date of Birth</label>
+                  <p className="text-[16px] font-medium text-gray-900 pb-2 border-b border-gray-200">
+                    {viewingCustomer.dateOfBirth ? new Date(viewingCustomer.dateOfBirth).toLocaleDateString() : '-'}
+                  </p>
+                </div>
+                <div className="mb-5">
+                  <label className="block text-[13px] font-semibold text-gray-500 uppercase tracking-wider mb-2">Phone Number</label>
+                  <p className="text-[16px] font-medium text-gray-900 pb-2 border-b border-gray-200">{viewingCustomer.phone || '-'}</p>
+                </div>
+                <div className="mb-5">
+                  <label className="block text-[13px] font-semibold text-gray-500 uppercase tracking-wider mb-2">WhatsApp Number</label>
+                  <p className="text-[16px] font-medium text-gray-900 pb-2 border-b border-gray-200">{viewingCustomer.whatsappNumber || '-'}</p>
+                </div>
+                <div className="mb-5">
+                  <label className="block text-[13px] font-semibold text-gray-500 uppercase tracking-wider mb-2">Email</label>
+                  <p className="text-[16px] font-medium text-gray-900 pb-2 border-b border-gray-200">{viewingCustomer.email || '-'}</p>
+                </div>
+                <div className="mb-5">
+                  <label className="block text-[13px] font-semibold text-gray-500 uppercase tracking-wider mb-2">GST Number</label>
+                  <p className="text-[16px] font-medium text-gray-900 pb-2 border-b border-gray-200">{viewingCustomer.gstNumber || '-'}</p>
+                </div>
+                <div className="mb-5">
+                  <label className="block text-[13px] font-semibold text-gray-500 uppercase tracking-wider mb-2">Status</label>
+                  <p className="pb-2 border-b border-gray-200">
+                    <span className={`text-[13px] font-semibold px-[10px] py-1.5 rounded-full ${
+                      viewingCustomer.isActive ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+                    }`}>
+                      {viewingCustomer.isActive ? 'Active' : 'Inactive'}
+                    </span>
+                  </p>
+                </div>
+                <div className="col-span-2 mb-5">
+                  <label className="block text-[13px] font-semibold text-gray-500 uppercase tracking-wider mb-2">Company Address</label>
+                  <p className="text-[16px] font-medium text-gray-900 pb-2 border-b border-gray-200">{viewingCustomer.address || '-'}</p>
+                </div>
+                <div className="col-span-2 mb-5">
+                  <label className="block text-[13px] font-semibold text-gray-500 uppercase tracking-wider mb-2">Personal Address</label>
+                  <p className="text-[16px] font-medium text-gray-900 pb-2 border-b border-gray-200">{viewingCustomer.personalAddress || '-'}</p>
+                </div>
+                <div className="mb-5">
+                  <label className="block text-[13px] font-semibold text-gray-500 uppercase tracking-wider mb-2">City</label>
+                  <p className="text-[16px] font-medium text-gray-900 pb-2 border-b border-gray-200">{viewingCustomer.city || '-'}</p>
+                </div>
+                <div className="mb-5">
+                  <label className="block text-[13px] font-semibold text-gray-500 uppercase tracking-wider mb-2">State</label>
+                  <p className="text-[16px] font-medium text-gray-900 pb-2 border-b border-gray-200">{viewingCustomer.state || '-'}</p>
+                </div>
+                <div className="mb-5">
+                  <label className="block text-[13px] font-semibold text-gray-500 uppercase tracking-wider mb-2">PIN</label>
+                  <p className="text-[16px] font-medium text-gray-900 pb-2 border-b border-gray-200">{viewingCustomer.pin || '-'}</p>
+                </div>
+              </div>
+              <div className="flex justify-end gap-3 mt-6">
+                <button
+                  onClick={() => setViewingCustomer(null)}
+                  className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+                >
+                  Close
                 </button>
               </div>
             </div>

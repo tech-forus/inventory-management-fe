@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Plus, Search, Edit, Trash2, X, Upload, Download } from 'lucide-react';
+import { Plus, Search, Edit, Trash2, X, Upload, Download, Eye } from 'lucide-react';
 import { libraryService } from '../../services/libraryService';
 import { validateRequired, validateEmail, validatePhone, validateGST } from '../../utils/validators';
 import * as XLSX from 'xlsx';
@@ -56,6 +56,7 @@ const VendorsTab: React.FC<VendorsTabProps> = ({ vendors, loading, onRefresh }) 
   const [search, setSearch] = useState('');
   const [showDialog, setShowDialog] = useState(false);
   const [editingVendor, setEditingVendor] = useState<Vendor | null>(null);
+  const [viewingVendor, setViewingVendor] = useState<Vendor | null>(null);
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -510,15 +511,15 @@ const VendorsTab: React.FC<VendorsTabProps> = ({ vendors, loading, onRefresh }) 
               <table className="w-full">
                 <thead className="bg-gray-50 border-b border-gray-200">
                   <tr>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Vendor Name</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Contact Person</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Designation</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Phone</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Email</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">GST Number</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Address</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Status</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Actions</th>
+                    <th className="px-4 py-3 text-center text-xs font-semibold text-gray-700 uppercase">Vendor Name</th>
+                    <th className="px-4 py-3 text-center text-xs font-semibold text-gray-700 uppercase">Contact Person</th>
+                    <th className="px-4 py-3 text-center text-xs font-semibold text-gray-700 uppercase">Designation</th>
+                    <th className="px-4 py-3 text-center text-xs font-semibold text-gray-700 uppercase">Phone</th>
+                    <th className="px-4 py-3 text-center text-xs font-semibold text-gray-700 uppercase">Email</th>
+                    <th className="px-4 py-3 text-center text-xs font-semibold text-gray-700 uppercase">GST Number</th>
+                    <th className="px-4 py-3 text-center text-xs font-semibold text-gray-700 uppercase">Address</th>
+                    <th className="px-4 py-3 text-center text-xs font-semibold text-gray-700 uppercase">Status</th>
+                    <th className="px-4 py-3 text-center text-xs font-semibold text-gray-700 uppercase">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200">
@@ -529,22 +530,29 @@ const VendorsTab: React.FC<VendorsTabProps> = ({ vendors, loading, onRefresh }) 
                   ) : (
                     filteredVendors.map((vendor) => (
                       <tr key={vendor.id} className="hover:bg-gray-50">
-                        <td className="px-4 py-3 text-sm font-medium text-gray-900">{vendor.name}</td>
-                        <td className="px-4 py-3 text-sm text-gray-700">{vendor.contactPerson || '-'}</td>
-                        <td className="px-4 py-3 text-sm text-gray-700">{vendor.designation || '-'}</td>
-                        <td className="px-4 py-3 text-sm text-gray-700">{vendor.phone || '-'}</td>
-                        <td className="px-4 py-3 text-sm text-gray-700">{vendor.email || '-'}</td>
-                        <td className="px-4 py-3 text-sm text-gray-700">{vendor.gstNumber || '-'}</td>
-                        <td className="px-4 py-3 text-sm text-gray-700">{vendor.address || '-'}</td>
-                        <td className="px-4 py-3 text-sm">
+                        <td className="px-4 py-3 text-sm font-medium text-gray-900 text-center">{vendor.name}</td>
+                        <td className="px-4 py-3 text-sm text-gray-700 text-center">{vendor.contactPerson || '-'}</td>
+                        <td className="px-4 py-3 text-sm text-gray-700 text-center">{vendor.designation || '-'}</td>
+                        <td className="px-4 py-3 text-sm text-gray-700 text-center">{vendor.phone || '-'}</td>
+                        <td className="px-4 py-3 text-sm text-gray-700 text-center">{vendor.email || '-'}</td>
+                        <td className="px-4 py-3 text-sm text-gray-700 text-center">{vendor.gstNumber || '-'}</td>
+                        <td className="px-4 py-3 text-sm text-gray-700 text-center">{vendor.address || '-'}</td>
+                        <td className="px-4 py-3 text-sm text-center">
                           <span className={`px-2 py-1 text-xs font-semibold rounded ${
                             vendor.isActive ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
                           }`}>
                             {vendor.isActive ? 'Active' : 'Inactive'}
                           </span>
                         </td>
-                        <td className="px-4 py-3 text-sm">
-                          <div className="flex items-center gap-2">
+                        <td className="px-4 py-3 text-sm text-center">
+                          <div className="flex items-center justify-center gap-2">
+                            <button
+                              onClick={() => setViewingVendor(vendor)}
+                              className="p-2 text-green-600 hover:bg-green-50 rounded-lg"
+                              title="View Details"
+                            >
+                              <Eye className="w-4 h-4" />
+                            </button>
                             <button
                               onClick={() => handleOpenDialog(vendor)}
                               className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg"
@@ -1074,6 +1082,89 @@ const VendorsTab: React.FC<VendorsTabProps> = ({ vendors, loading, onRefresh }) 
                   className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
                 >
                   {saving ? 'Saving...' : `Save ${multipleBrands.filter(i => i.name.trim()).length} Brand(s)`}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* View Details Modal */}
+      {viewingVendor && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-3xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              <div className="flex justify-between items-center mb-8">
+                <h2 className="text-[24px] font-semibold text-gray-900">Vendor Details</h2>
+                <button
+                  onClick={() => setViewingVendor(null)}
+                  className="text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+              <div className="grid grid-cols-2 gap-6">
+                <div className="mb-5">
+                  <label className="block text-[13px] font-semibold text-gray-500 uppercase tracking-wider mb-2">Vendor Name</label>
+                  <p className="text-[16px] font-medium text-gray-900 pb-2 border-b border-gray-200">{viewingVendor.name}</p>
+                </div>
+                <div className="mb-5">
+                  <label className="block text-[13px] font-semibold text-gray-500 uppercase tracking-wider mb-2">Contact Person</label>
+                  <p className="text-[16px] font-medium text-gray-900 pb-2 border-b border-gray-200">{viewingVendor.contactPerson || '-'}</p>
+                </div>
+                <div className="mb-5">
+                  <label className="block text-[13px] font-semibold text-gray-500 uppercase tracking-wider mb-2">Designation</label>
+                  <p className="text-[16px] font-medium text-gray-900 pb-2 border-b border-gray-200">{viewingVendor.designation || '-'}</p>
+                </div>
+                <div className="mb-5">
+                  <label className="block text-[13px] font-semibold text-gray-500 uppercase tracking-wider mb-2">Phone Number</label>
+                  <p className="text-[16px] font-medium text-gray-900 pb-2 border-b border-gray-200">{viewingVendor.phone || '-'}</p>
+                </div>
+                <div className="mb-5">
+                  <label className="block text-[13px] font-semibold text-gray-500 uppercase tracking-wider mb-2">WhatsApp Number</label>
+                  <p className="text-[16px] font-medium text-gray-900 pb-2 border-b border-gray-200">{viewingVendor.whatsappNumber || '-'}</p>
+                </div>
+                <div className="mb-5">
+                  <label className="block text-[13px] font-semibold text-gray-500 uppercase tracking-wider mb-2">Email</label>
+                  <p className="text-[16px] font-medium text-gray-900 pb-2 border-b border-gray-200">{viewingVendor.email || '-'}</p>
+                </div>
+                <div className="mb-5">
+                  <label className="block text-[13px] font-semibold text-gray-500 uppercase tracking-wider mb-2">GST Number</label>
+                  <p className="text-[16px] font-medium text-gray-900 pb-2 border-b border-gray-200">{viewingVendor.gstNumber || '-'}</p>
+                </div>
+                <div className="mb-5">
+                  <label className="block text-[13px] font-semibold text-gray-500 uppercase tracking-wider mb-2">Status</label>
+                  <p className="pb-2 border-b border-gray-200">
+                    <span className={`text-[13px] font-semibold px-[10px] py-1.5 rounded-full ${
+                      viewingVendor.isActive ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+                    }`}>
+                      {viewingVendor.isActive ? 'Active' : 'Inactive'}
+                    </span>
+                  </p>
+                </div>
+                <div className="col-span-2 mb-5">
+                  <label className="block text-[13px] font-semibold text-gray-500 uppercase tracking-wider mb-2">Address</label>
+                  <p className="text-[16px] font-medium text-gray-900 pb-2 border-b border-gray-200">{viewingVendor.address || '-'}</p>
+                </div>
+                <div className="mb-5">
+                  <label className="block text-[13px] font-semibold text-gray-500 uppercase tracking-wider mb-2">City</label>
+                  <p className="text-[16px] font-medium text-gray-900 pb-2 border-b border-gray-200">{viewingVendor.city || '-'}</p>
+                </div>
+                <div className="mb-5">
+                  <label className="block text-[13px] font-semibold text-gray-500 uppercase tracking-wider mb-2">State</label>
+                  <p className="text-[16px] font-medium text-gray-900 pb-2 border-b border-gray-200">{viewingVendor.state || '-'}</p>
+                </div>
+                <div className="mb-5">
+                  <label className="block text-[13px] font-semibold text-gray-500 uppercase tracking-wider mb-2">PIN</label>
+                  <p className="text-[16px] font-medium text-gray-900 pb-2 border-b border-gray-200">{viewingVendor.pin || '-'}</p>
+                </div>
+              </div>
+              <div className="flex justify-end gap-3 mt-6">
+                <button
+                  onClick={() => setViewingVendor(null)}
+                  className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+                >
+                  Close
                 </button>
               </div>
             </div>

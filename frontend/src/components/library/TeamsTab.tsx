@@ -486,13 +486,13 @@ const TeamsTab: React.FC<TeamsTabProps> = ({ teams, loading, onRefresh }) => {
               <table className="w-full">
                 <thead className="bg-gray-50 border-b border-gray-200">
                   <tr>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">First Name</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Last Name</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Contact Number</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Email ID</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Department</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Designation</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Actions</th>
+                    <th className="px-4 py-3 text-center text-xs font-semibold text-gray-700 uppercase">First Name</th>
+                    <th className="px-4 py-3 text-center text-xs font-semibold text-gray-700 uppercase">Last Name</th>
+                    <th className="px-4 py-3 text-center text-xs font-semibold text-gray-700 uppercase">Contact Number</th>
+                    <th className="px-4 py-3 text-center text-xs font-semibold text-gray-700 uppercase">Email ID</th>
+                    <th className="px-4 py-3 text-center text-xs font-semibold text-gray-700 uppercase">Department</th>
+                    <th className="px-4 py-3 text-center text-xs font-semibold text-gray-700 uppercase">Designation</th>
+                    <th className="px-4 py-3 text-center text-xs font-semibold text-gray-700 uppercase">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200">
@@ -507,14 +507,14 @@ const TeamsTab: React.FC<TeamsTabProps> = ({ teams, loading, onRefresh }) => {
                       const lastName = nameParts.slice(1).join(' ') || '-';
                       return (
                         <tr key={team.id} className="hover:bg-gray-50">
-                          <td className="px-4 py-3 text-sm font-medium text-gray-900">{firstName}</td>
-                          <td className="px-4 py-3 text-sm font-medium text-gray-900">{lastName}</td>
-                          <td className="px-4 py-3 text-sm text-gray-700">{team.contactNumber || '-'}</td>
-                          <td className="px-4 py-3 text-sm text-gray-700">{team.emailId || '-'}</td>
-                          <td className="px-4 py-3 text-sm text-gray-700">{team.department || '-'}</td>
-                          <td className="px-4 py-3 text-sm text-gray-700">{team.designation || '-'}</td>
-                          <td className="px-4 py-3 text-sm">
-                            <div className="flex items-center gap-2">
+                          <td className="px-4 py-3 text-sm font-medium text-gray-900 text-center">{firstName}</td>
+                          <td className="px-4 py-3 text-sm font-medium text-gray-900 text-center">{lastName}</td>
+                          <td className="px-4 py-3 text-sm text-gray-700 text-center">{team.contactNumber || '-'}</td>
+                          <td className="px-4 py-3 text-sm text-gray-700 text-center">{team.emailId || '-'}</td>
+                          <td className="px-4 py-3 text-sm text-gray-700 text-center">{team.department || '-'}</td>
+                          <td className="px-4 py-3 text-sm text-gray-700 text-center">{team.designation || '-'}</td>
+                          <td className="px-4 py-3 text-sm text-center">
+                            <div className="flex items-center justify-center gap-2">
                               <button
                                 onClick={() => handleOpenDialog(team)}
                                 className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg"

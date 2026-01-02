@@ -78,6 +78,8 @@ interface Customer {
   email?: string;
   gstNumber?: string;
   address?: string;
+  personalAddress?: string;
+  dateOfBirth?: string;
   city?: string;
   state?: string;
   pin?: string;
@@ -105,8 +107,10 @@ interface Product {
 interface Transportor {
   id: number;
   name: string;
+  subVendor?: string;
   contactPerson?: string;
   contactNumber?: string;
+  whatsappNumber?: string;
   email?: string;
   gstNumber?: string;
   vehicleType?: string;
