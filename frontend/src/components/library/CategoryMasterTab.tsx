@@ -84,6 +84,15 @@ const CategoryMasterTab: React.FC<CategoryMasterTabProps> = ({
   const [subForm, setSubForm] = useState({ name: '', itemCategoryId: 0 });
   const [availableProductCategories, setAvailableProductCategories] = useState<ProductCategory[]>([]);
   const [availableItemCategories, setAvailableItemCategories] = useState<ItemCategory[]>([]);
+  // Unified form for editing - shows all three fields
+  const [unifiedEditForm, setUnifiedEditForm] = useState({
+    productCategory: '',
+    itemCategory: '',
+    subCategory: '',
+    productCategoryId: 0,
+    itemCategoryId: 0,
+    subCategoryId: 0,
+  });
 
   // Multiple form states
   const [multipleItemCategories, setMultipleItemCategories] = useState<Array<{ name: string }>>([{ name: '' }]);
@@ -154,13 +163,14 @@ const CategoryMasterTab: React.FC<CategoryMasterTabProps> = ({
       libraryService.getYourProductCategories().then((res) => {
         setAvailableProductCategories(res.data || []);
       });
-      if (formType === 'sub' || formType === 'item') {
+      // Load item categories when editing or when formType is sub/item
+      if (editingRow || formType === 'sub' || formType === 'item') {
         libraryService.getYourItemCategories().then((res) => {
           setAvailableItemCategories(res.data || []);
         });
       }
     }
-  }, [showDialog, formType]);
+  }, [showDialog, formType, editingRow]);
 
   const filteredRows = unifiedRows.filter((row) => {
     // Check if row is complete (all three levels have values, not '—')
@@ -197,6 +207,16 @@ const CategoryMasterTab: React.FC<CategoryMasterTabProps> = ({
 
     if (row) {
       setEditingRow(row);
+      // When editing, populate unified form with all data from the row
+      setUnifiedEditForm({
+        productCategory: row.productCategory !== '-' ? row.productCategory : '',
+        itemCategory: row.itemCategory !== '-' ? row.itemCategory : '',
+        subCategory: row.subCategory !== '-' ? row.subCategory : '',
+        productCategoryId: row.productCategoryId || 0,
+        itemCategoryId: row.itemCategoryId || 0,
+        subCategoryId: row.subCategoryId || 0,
+      });
+      // Also set individual forms for backward compatibility
       if (type === 'product') {
         const pc = productCategories.find((c) => c.id === row.productCategoryId);
         setProductForm({ name: pc?.name || '' });
@@ -227,6 +247,14 @@ const CategoryMasterTab: React.FC<CategoryMasterTabProps> = ({
     setEditingRow(null);
     setErrors({});
     setIsMultipleMode(false);
+    setUnifiedEditForm({
+      productCategory: '',
+      itemCategory: '',
+      subCategory: '',
+      productCategoryId: 0,
+      itemCategoryId: 0,
+      subCategoryId: 0,
+    });
   };
 
   const addMultipleItemRow = () => {
@@ -359,12 +387,38 @@ const CategoryMasterTab: React.FC<CategoryMasterTabProps> = ({
     try {
       setSaving(true);
       if (editingRow) {
-        if (formType === 'product' && editingRow.productCategoryId) {
-          await libraryService.updateYourProductCategory(editingRow.productCategoryId, productForm);
-        } else if (formType === 'item' && editingRow.itemCategoryId) {
-          await libraryService.updateYourItemCategory(editingRow.itemCategoryId, itemForm);
-        } else if (formType === 'sub' && editingRow.subCategoryId) {
-          await libraryService.updateYourSubCategory(editingRow.subCategoryId, subForm);
+        // When editing, handle all three fields
+        if (editingRow.type === 'product' && editingRow.productCategoryId) {
+          // Update product category
+          await libraryService.updateYourProductCategory(editingRow.productCategoryId, {
+            name: unifiedEditForm.productCategory
+          });
+          // Create item category if provided and it's new (was empty before)
+          if (unifiedEditForm.itemCategory.trim() && (editingRow.itemCategory === '-' || !editingRow.itemCategory)) {
+            await libraryService.createYourItemCategory({
+              name: unifiedEditForm.itemCategory.trim(),
+              productCategoryId: editingRow.productCategoryId
+            });
+          }
+        } else if (editingRow.type === 'item' && editingRow.itemCategoryId) {
+          // Update item category
+          await libraryService.updateYourItemCategory(editingRow.itemCategoryId, {
+            name: unifiedEditForm.itemCategory,
+            productCategoryId: unifiedEditForm.productCategoryId
+          });
+          // Create sub category if provided and it's new (was empty before)
+          if (unifiedEditForm.subCategory.trim() && (editingRow.subCategory === '-' || !editingRow.subCategory)) {
+            await libraryService.createYourSubCategory({
+              name: unifiedEditForm.subCategory.trim(),
+              itemCategoryId: editingRow.itemCategoryId
+            });
+          }
+        } else if (editingRow.type === 'sub' && editingRow.subCategoryId) {
+          // Update sub category
+          await libraryService.updateYourSubCategory(editingRow.subCategoryId, {
+            name: unifiedEditForm.subCategory,
+            itemCategoryId: unifiedEditForm.itemCategoryId
+          });
         }
       } else {
         if (formType === 'product') {
@@ -857,24 +911,80 @@ const CategoryMasterTab: React.FC<CategoryMasterTabProps> = ({
               )}
 
               <div className="space-y-4">
-                {formType === 'product' && (
-                  <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">
-                      Product Category Name <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      value={productForm.name}
-                      onChange={(e) => setProductForm({ name: e.target.value })}
-                      className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 text-sm ${
-                        errors.name ? 'border-red-500' : 'border-gray-300'
-                      }`}
-                    />
-                    {errors.name && <p className="text-red-500 text-xs mt-1">{errors.name}</p>}
-                  </div>
-                )}
+                {/* When editing, show all three fields */}
+                {editingRow ? (
+                  <>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-1">
+                        Product Category <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={unifiedEditForm.productCategory}
+                        onChange={(e) => setUnifiedEditForm({ ...unifiedEditForm, productCategory: e.target.value })}
+                        disabled={editingRow.type !== 'product'}
+                        className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 text-sm ${
+                          errors.productCategory ? 'border-red-500' : 'border-gray-300'
+                        } ${editingRow.type !== 'product' ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                      />
+                      {errors.productCategory && <p className="text-red-500 text-xs mt-1">{errors.productCategory}</p>}
+                    </div>
 
-                {formType === 'item' && (
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-1">
+                        Item Category {editingRow.type === 'item' && <span className="text-red-500">*</span>}
+                      </label>
+                      <input
+                        type="text"
+                        value={unifiedEditForm.itemCategory}
+                        onChange={(e) => setUnifiedEditForm({ ...unifiedEditForm, itemCategory: e.target.value })}
+                        disabled={editingRow.type === 'item' ? false : (editingRow.itemCategory !== '-' && editingRow.itemCategory !== '')}
+                        placeholder={editingRow.itemCategory === '-' || editingRow.itemCategory === '' ? 'Enter item category name' : ''}
+                        className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 text-sm ${
+                          errors.itemCategory ? 'border-red-500' : 'border-gray-300'
+                        } ${(editingRow.type !== 'item' && editingRow.itemCategory !== '-' && editingRow.itemCategory !== '') ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                      />
+                      {errors.itemCategory && <p className="text-red-500 text-xs mt-1">{errors.itemCategory}</p>}
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-1">
+                        Sub Category {editingRow.type === 'sub' && <span className="text-red-500">*</span>}
+                      </label>
+                      <input
+                        type="text"
+                        value={unifiedEditForm.subCategory}
+                        onChange={(e) => setUnifiedEditForm({ ...unifiedEditForm, subCategory: e.target.value })}
+                        disabled={editingRow.type === 'sub' ? false : (editingRow.subCategory !== '-' && editingRow.subCategory !== '')}
+                        placeholder={editingRow.subCategory === '-' || editingRow.subCategory === '' ? 'Enter sub category name' : ''}
+                        className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 text-sm ${
+                          errors.subCategory ? 'border-red-500' : 'border-gray-300'
+                        } ${(editingRow.type !== 'sub' && editingRow.subCategory !== '-' && editingRow.subCategory !== '') ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                      />
+                      {errors.subCategory && <p className="text-red-500 text-xs mt-1">{errors.subCategory}</p>}
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    {/* When adding new, show fields based on formType */}
+                    {formType === 'product' && (
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-1">
+                          Product Category Name <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          value={productForm.name}
+                          onChange={(e) => setProductForm({ name: e.target.value })}
+                          className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 text-sm ${
+                            errors.name ? 'border-red-500' : 'border-gray-300'
+                          }`}
+                        />
+                        {errors.name && <p className="text-red-500 text-xs mt-1">{errors.name}</p>}
+                      </div>
+                    )}
+
+                    {formType === 'item' && (
                   <>
                     <div>
                       <label className="block text-xs font-medium text-gray-700 mb-1">
@@ -953,7 +1063,7 @@ const CategoryMasterTab: React.FC<CategoryMasterTabProps> = ({
                   </>
                 )}
 
-                {formType === 'sub' && (
+                    {formType === 'sub' && (
                   <>
                     <div>
                       <label className="block text-xs font-medium text-gray-700 mb-1">
