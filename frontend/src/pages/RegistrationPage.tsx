@@ -68,6 +68,16 @@ const RegistrationPage: React.FC = () => {
       filteredValue = value.replace(/[^0-9]/g, '');
     }
     
+    // Phone and Admin Phone: Only allow digits 0-9, max 10 digits
+    if (name === 'phone' || name === 'adminPhone') {
+      // Remove all non-numeric characters
+      filteredValue = value.replace(/[^0-9]/g, '');
+      // Limit to 10 digits
+      if (filteredValue.length > 10) {
+        filteredValue = filteredValue.substring(0, 10);
+      }
+    }
+    
     // Company Name and Website: Enforce max length of 50
     if (name === 'companyName' || name === 'website') {
       if (filteredValue.length > 50) {

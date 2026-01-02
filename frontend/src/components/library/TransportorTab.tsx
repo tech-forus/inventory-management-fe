@@ -401,7 +401,16 @@ const TransportorTab: React.FC<TransportorTabProps> = ({ transportors, loading, 
                     <input
                       type="text"
                       value={transportorForm.contactNumber}
-                      onChange={(e) => setTransportorForm({ ...transportorForm, contactNumber: e.target.value })}
+                      onChange={(e) => {
+                        // Only allow digits 0-9, max 10 digits
+                        let contactNumber = e.target.value.replace(/[^0-9]/g, '');
+                        if (contactNumber.length > 10) {
+                          contactNumber = contactNumber.substring(0, 10);
+                        }
+                        setTransportorForm({ ...transportorForm, contactNumber });
+                      }}
+                      maxLength={10}
+                      inputMode="numeric"
                       className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${
                         errors.contactNumber ? 'border-red-500' : 'border-gray-300'
                       }`}

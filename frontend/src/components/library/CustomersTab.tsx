@@ -423,13 +423,19 @@ const CustomersTab: React.FC<CustomersTabProps> = ({ customers, loading, onRefre
                       type="text"
                       value={customerForm.phone}
                       onChange={(e) => {
-                        const newPhone = e.target.value;
+                        // Only allow digits 0-9, max 10 digits
+                        let newPhone = e.target.value.replace(/[^0-9]/g, '');
+                        if (newPhone.length > 10) {
+                          newPhone = newPhone.substring(0, 10);
+                        }
                         setCustomerForm({ 
                           ...customerForm, 
                           phone: newPhone,
                           whatsappNumber: sameAsPhone ? newPhone : customerForm.whatsappNumber
                         });
                       }}
+                      maxLength={10}
+                      inputMode="numeric"
                       className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${
                         errors.phone ? 'border-red-500' : 'border-gray-300'
                       }`}
