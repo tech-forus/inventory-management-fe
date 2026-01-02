@@ -1060,84 +1060,84 @@ const CategoryMasterTab: React.FC<CategoryMasterTabProps> = ({
                         {errors.name && <p className="text-red-500 text-xs mt-1">{errors.name}</p>}
                       </div>
                     )}
-                  </>
-                )}
 
                     {formType === 'sub' && (
-                  <>
-                    <div>
-                      <label className="block text-xs font-medium text-gray-700 mb-1">
-                        Item Category <span className="text-red-500">*</span>
-                      </label>
-                      <select
-                        value={subForm.itemCategoryId}
-                        onChange={(e) => setSubForm({ ...subForm, itemCategoryId: parseInt(e.target.value) })}
-                        className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm ${
-                          errors.itemCategoryId ? 'border-red-500' : 'border-gray-300'
-                        }`}
-                      >
-                        <option value="0">Select Item Category</option>
-                        {availableItemCategories.map((ic) => (
-                          <option key={ic.id} value={ic.id}>
-                            {ic.name}
-                          </option>
-                        ))}
-                      </select>
-                      {errors.itemCategoryId && <p className="text-red-500 text-xs mt-1">{errors.itemCategoryId}</p>}
-                    </div>
-
-                    {isMultipleMode && !editingRow ? (
-                      <div>
-                        <label className="block text-xs font-medium text-gray-700 mb-1">
-                          Sub Category Names <span className="text-red-500">*</span>
-                        </label>
-                        <div className="space-y-2">
-                          {multipleSubCategories.map((item, index) => (
-                            <div key={index} className="flex gap-2">
-                              <input
-                                type="text"
-                                value={item.name}
-                                onChange={(e) => updateMultipleSubField(index, e.target.value)}
-                                placeholder={`Sub Category ${index + 1}`}
-                                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm"
-                              />
-                              {multipleSubCategories.length > 1 && (
-                                <button
-                                  type="button"
-                                  onClick={() => removeMultipleSubRow(index)}
-                                  className="px-2 py-2 text-red-600 hover:bg-red-50 rounded-lg"
-                                >
-                                  <X className="w-4 h-4" />
-                                </button>
-                              )}
-                            </div>
-                          ))}
-                          <button
-                            type="button"
-                            onClick={addMultipleSubRow}
-                            className="text-sm text-blue-600 hover:text-blue-700 flex items-center gap-1"
+                      <>
+                        <div>
+                          <label className="block text-xs font-medium text-gray-700 mb-1">
+                            Item Category <span className="text-red-500">*</span>
+                          </label>
+                          <select
+                            value={subForm.itemCategoryId}
+                            onChange={(e) => setSubForm({ ...subForm, itemCategoryId: parseInt(e.target.value) })}
+                            className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm ${
+                              errors.itemCategoryId ? 'border-red-500' : 'border-gray-300'
+                            }`}
                           >
-                            <Plus className="w-3.5 h-3.5" />
-                            Add Another
-                          </button>
+                            <option value="0">Select Item Category</option>
+                            {availableItemCategories.map((ic) => (
+                              <option key={ic.id} value={ic.id}>
+                                {ic.name}
+                              </option>
+                            ))}
+                          </select>
+                          {errors.itemCategoryId && <p className="text-red-500 text-xs mt-1">{errors.itemCategoryId}</p>}
                         </div>
-                        {errors.name && <p className="text-red-500 text-xs mt-1">{errors.name}</p>}
-                      </div>
-                    ) : (
-                      <div>
-                        <label className="block text-xs font-medium text-gray-700 mb-1">
-                          Sub Category Name <span className="text-red-500">*</span>
-                        </label>
-                        <input
-                          type="text"
-                          value={subForm.name}
-                          onChange={(e) => setSubForm({ ...subForm, name: e.target.value })}
-                          className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 text-sm ${
-                            errors.name ? 'border-red-500' : 'border-gray-300'
-                          }`}
-                        />
-                        {errors.name && <p className="text-red-500 text-xs mt-1">{errors.name}</p>}
-                      </div>
+
+                        {isMultipleMode && !editingRow ? (
+                          <div>
+                            <label className="block text-xs font-medium text-gray-700 mb-1">
+                              Sub Category Names <span className="text-red-500">*</span>
+                            </label>
+                            <div className="space-y-2">
+                              {multipleSubCategories.map((item, index) => (
+                                <div key={index} className="flex gap-2">
+                                  <input
+                                    type="text"
+                                    value={item.name}
+                                    onChange={(e) => updateMultipleSubField(index, e.target.value)}
+                                    placeholder={`Sub Category ${index + 1}`}
+                                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm"
+                                  />
+                                  {multipleSubCategories.length > 1 && (
+                                    <button
+                                      type="button"
+                                      onClick={() => removeMultipleSubRow(index)}
+                                      className="px-2 py-2 text-red-600 hover:bg-red-50 rounded-lg"
+                                    >
+                                      <X className="w-4 h-4" />
+                                    </button>
+                                  )}
+                                </div>
+                              ))}
+                              <button
+                                type="button"
+                                onClick={addMultipleSubRow}
+                                className="text-sm text-blue-600 hover:text-blue-700 flex items-center gap-1"
+                              >
+                                <Plus className="w-3.5 h-3.5" />
+                                Add Another
+                              </button>
+                            </div>
+                            {errors.name && <p className="text-red-500 text-xs mt-1">{errors.name}</p>}
+                          </div>
+                        ) : (
+                          <div>
+                            <label className="block text-xs font-medium text-gray-700 mb-1">
+                              Sub Category Name <span className="text-red-500">*</span>
+                            </label>
+                            <input
+                              type="text"
+                              value={subForm.name}
+                              onChange={(e) => setSubForm({ ...subForm, name: e.target.value })}
+                              className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 text-sm ${
+                                errors.name ? 'border-red-500' : 'border-gray-300'
+                              }`}
+                            />
+                            {errors.name && <p className="text-red-500 text-xs mt-1">{errors.name}</p>}
+                          </div>
+                        )}
+                      </>
                     )}
                   </>
                 )}
