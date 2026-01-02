@@ -6,37 +6,31 @@ const isLocalhost = typeof window !== 'undefined' &&
 
 // Backend URL - Use environment variable (Railway) or detect based on hostname
 const VITE_API_URL = (import.meta.env as any).VITE_API_URL;
-// Debug: Log what we're getting from env
-console.log('[API DEBUG] import.meta.env.VITE_API_URL:', VITE_API_URL);
-console.log('[API DEBUG] import.meta.env keys:', Object.keys(import.meta.env));
 
 const BACKEND_URL = VITE_API_URL || 
   (isLocalhost
-    ? 'http://localhost:5000'  // Development: local backend
-    : 'https://inventory-management-backend-production-5631.up.railway.app');  // Production: Railway backend
+    ? 'http://localhost:5000'  // Development: local backend (when VITE_API_URL not set)
+    : 'https://inventory-management-backend-production-5631.up.railway.app');  // Production fallback
 
 // Use proxy only if:
 // 1. Running on localhost AND
-// 2. VITE_API_URL is NOT set (meaning we want to use local backend)
-// Otherwise, use direct backend URL
+// 2. VITE_API_URL is NOT set (meaning we want to use local backend via proxy)
+// Otherwise, use direct backend URL (Railway or local)
 const useProxy = isLocalhost && !VITE_API_URL;
 const API_BASE_URL = useProxy
   ? '/api'  // Vite proxy will forward to local backend
   : `${BACKEND_URL}/api`;  // Direct URL to backend (Railway or local)
 
-// Log API configuration
-if (useProxy) {
-  console.log('[API] Development mode - Using proxy to local backend');
-  console.log('[API] Base URL:', API_BASE_URL);
-  console.log('[API] Proxy target:', BACKEND_URL);
-} else if (VITE_API_URL) {
-  console.log('[API] Using Railway backend (VITE_API_URL set)');
-  console.log('[API] Base URL:', API_BASE_URL);
-  console.log('[API] Backend URL:', BACKEND_URL);
-} else {
-  console.log('[API] Production mode - Using Railway backend');
-  console.log('[API] Base URL:', API_BASE_URL);
-  console.log('[API] Backend URL:', BACKEND_URL);
+// Log API configuration (only in development)
+if (isLocalhost) {
+  if (useProxy) {
+    console.log('[API] Development mode - Using proxy to local backend');
+    console.log('[API] Base URL:', API_BASE_URL);
+  } else if (VITE_API_URL) {
+    console.log('[API] Using Railway backend (VITE_API_URL set)');
+    console.log('[API] Base URL:', API_BASE_URL);
+    console.log('[API] Backend URL:', BACKEND_URL);
+  }
 }
 
 const api = axios.create({
@@ -56,7 +50,7 @@ api.interceptors.request.use(
     }
     
     // Log request in development
-    if ((isLocalhost || VITE_API_URL) && config.baseURL && config.url) {
+    if (isLocalhost && config.baseURL && config.url) {
       const fullUrl = config.baseURL + config.url;
       console.log('[API] Request:', config.method?.toUpperCase(), fullUrl);
     }
