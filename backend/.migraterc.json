@@ -1,8 +1,0 @@
-{
-  "migrations": {
-    "directory": "scripts/database/migrations"
-  },
-  "migrationFile": "migration",
-  "migrationFileLanguage": "sql"
-}
-
