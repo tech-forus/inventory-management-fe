@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../utils/api';
+import { lookupPincode } from '../utils/pincodeLookup';
 import { Building2, User, Lock, Mail, Phone, MapPin, Globe, FileText, ArrowLeft } from 'lucide-react';
 
 interface FormData {
@@ -64,18 +65,8 @@ const RegistrationPage: React.FC = () => {
     
     // PIN Code: Only allow numbers
     if (name === 'pin') {
-      // Remove all non-numeric characters
-      filteredValue = value.replace(/[^0-9]/g, '');
-    }
-    
-    // Phone and Admin Phone: Only allow digits 0-9, max 10 digits
-    if (name === 'phone' || name === 'adminPhone') {
-      // Remove all non-numeric characters
-      filteredValue = value.replace(/[^0-9]/g, '');
-      // Limit to 10 digits
-      if (filteredValue.length > 10) {
-        filteredValue = filteredValue.substring(0, 10);
-      }
+      // Remove all non-numeric characters and limit to 6 digits
+      filteredValue = value.replace(/[^0-9]/g, '').substring(0, 6);
     }
     
     // Company Name and Website: Enforce max length of 50
@@ -85,11 +76,26 @@ const RegistrationPage: React.FC = () => {
       }
     }
     
-    setFormData(prev => ({
-      ...prev,
+    // Auto-fill city and state when pincode is 6 digits
+    const updatedForm: Partial<FormData> = {
+      ...formData,
       [name]: filteredValue,
       // If company phone changes and checkbox is checked, update admin phone too
       ...(name === 'phone' && useCompanyPhone ? { adminPhone: filteredValue } : {})
+    };
+    
+    // Auto-fill city and state when pincode is complete
+    if (name === 'pin' && filteredValue.length === 6) {
+      const pincodeData = lookupPincode(filteredValue);
+      if (pincodeData) {
+        updatedForm.city = pincodeData.city;
+        updatedForm.state = pincodeData.state;
+      }
+    }
+    
+    setFormData(prev => ({
+      ...prev,
+      ...updatedForm
     }));
     // Clear error when user starts typing
     if (errors[name as keyof FormData]) {
@@ -493,6 +499,7 @@ const RegistrationPage: React.FC = () => {
                     onChange={handleChange}
                     pattern="[0-9]{6}"
                     inputMode="numeric"
+                    maxLength={6}
                     className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all ${
                       errors.pin ? 'border-red-500' : 'border-gray-300'
                     }`}
