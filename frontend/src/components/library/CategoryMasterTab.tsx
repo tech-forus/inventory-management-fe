@@ -60,6 +60,7 @@ const CategoryMasterTab: React.FC<CategoryMasterTabProps> = ({
 }) => {
   const navigate = useNavigate();
   const [search, setSearch] = useState('');
+  const [showCompleteOnly, setShowCompleteOnly] = useState(false);
   const [unifiedRows, setUnifiedRows] = useState<UnifiedCategoryRow[]>([]);
   const [showDialog, setShowDialog] = useState(false);
   const [editingRow, setEditingRow] = useState<UnifiedCategoryRow | null>(null);
@@ -83,7 +84,6 @@ const CategoryMasterTab: React.FC<CategoryMasterTabProps> = ({
   const [subForm, setSubForm] = useState({ name: '', itemCategoryId: 0 });
   const [availableProductCategories, setAvailableProductCategories] = useState<ProductCategory[]>([]);
   const [availableItemCategories, setAvailableItemCategories] = useState<ItemCategory[]>([]);
-  const [newSubCategoryName, setNewSubCategoryName] = useState('');
 
   // Multiple form states
   const [multipleItemCategories, setMultipleItemCategories] = useState<Array<{ name: string }>>([{ name: '' }]);
@@ -99,8 +99,8 @@ const CategoryMasterTab: React.FC<CategoryMasterTabProps> = ({
         id: `product-${pc.id}`,
         type: 'product',
         productCategory: pc.name,
-        itemCategory: '-',
-        subCategory: '-',
+        itemCategory: '—',
+        subCategory: '—',
         createdAt: pc.createdAt || '',
         productCategoryId: pc.id,
       });
@@ -112,9 +112,9 @@ const CategoryMasterTab: React.FC<CategoryMasterTabProps> = ({
       rows.push({
         id: `item-${ic.id}`,
         type: 'item',
-        productCategory: productCat?.name || '-',
+        productCategory: productCat?.name || '—',
         itemCategory: ic.name,
-        subCategory: '-',
+        subCategory: '—',
         createdAt: ic.createdAt || '',
         productCategoryId: ic.productCategoryId,
         itemCategoryId: ic.id,
@@ -128,8 +128,8 @@ const CategoryMasterTab: React.FC<CategoryMasterTabProps> = ({
       rows.push({
         id: `sub-${sc.id}`,
         type: 'sub',
-        productCategory: productCat?.name || '-',
-        itemCategory: itemCat?.name || '-',
+        productCategory: productCat?.name || '—',
+        itemCategory: itemCat?.name || '—',
         subCategory: sc.name,
         createdAt: sc.createdAt || '',
         productCategoryId: productCat?.id,
@@ -163,30 +163,30 @@ const CategoryMasterTab: React.FC<CategoryMasterTabProps> = ({
   }, [showDialog, formType]);
 
   const filteredRows = unifiedRows.filter((row) => {
+    // Check if row is complete (all three levels have values, not '—')
+    const isComplete = 
+      row.productCategory && 
+      row.productCategory !== '—' && 
+      row.itemCategory && 
+      row.itemCategory !== '—' && 
+      row.subCategory && 
+      row.subCategory !== '—';
+
+    // If toggle is set to show complete only, filter out incomplete rows
+    if (showCompleteOnly && !isComplete) {
+      return false;
+    }
+
     const searchLower = search.toLowerCase();
 
-    // Always filter out incomplete rows (hide rows with missing or placeholder values)
-    const hasCompleteHierarchy =
-      row.productCategory &&
-      row.productCategory !== '-' &&
-      row.productCategory.trim() !== '' &&
-      row.itemCategory &&
-      row.itemCategory !== '-' &&
-      row.itemCategory.trim() !== '' &&
-      row.subCategory &&
-      row.subCategory !== '-' &&
-      row.subCategory.trim() !== '';
-
-    if (!hasCompleteHierarchy) return false;
-
-    // If no search term, show all complete rows
+    // If no search term, show rows based on toggle
     if (!searchLower) return true;
 
-    // Filter based on search term (only on complete rows)
+    // Filter based on search term (search across all columns)
     return (
-      row.productCategory.toLowerCase().includes(searchLower) ||
-      row.itemCategory.toLowerCase().includes(searchLower) ||
-      row.subCategory.toLowerCase().includes(searchLower)
+      (row.productCategory && row.productCategory !== '—' && row.productCategory.toLowerCase().includes(searchLower)) ||
+      (row.itemCategory && row.itemCategory !== '—' && row.itemCategory.toLowerCase().includes(searchLower)) ||
+      (row.subCategory && row.subCategory !== '—' && row.subCategory.toLowerCase().includes(searchLower))
     );
   });
 
@@ -203,8 +203,6 @@ const CategoryMasterTab: React.FC<CategoryMasterTabProps> = ({
       } else if (type === 'item') {
         const ic = itemCategories.find((c) => c.id === row.itemCategoryId);
         setItemForm({ name: ic?.name || '', productCategoryId: ic?.productCategoryId || 0 });
-        // Check if subcategory is missing and allow adding it
-        setNewSubCategoryName(row.subCategory === '-' || !row.subCategory ? '' : '');
       } else if (type === 'sub') {
         const sc = subCategories.find((c) => c.id === row.subCategoryId);
         setSubForm({ name: sc?.name || '', itemCategoryId: sc?.itemCategoryId || 0 });
@@ -216,7 +214,6 @@ const CategoryMasterTab: React.FC<CategoryMasterTabProps> = ({
       } else if (type === 'item') {
         setItemForm({ name: '', productCategoryId: 0 });
         setMultipleItemCategories([{ name: '' }]);
-        setNewSubCategoryName('');
       } else if (type === 'sub') {
         setSubForm({ name: '', itemCategoryId: 0 });
         setMultipleSubCategories([{ name: '' }]);
@@ -230,7 +227,6 @@ const CategoryMasterTab: React.FC<CategoryMasterTabProps> = ({
     setEditingRow(null);
     setErrors({});
     setIsMultipleMode(false);
-    setNewSubCategoryName('');
   };
 
   const addMultipleItemRow = () => {
@@ -367,13 +363,6 @@ const CategoryMasterTab: React.FC<CategoryMasterTabProps> = ({
           await libraryService.updateYourProductCategory(editingRow.productCategoryId, productForm);
         } else if (formType === 'item' && editingRow.itemCategoryId) {
           await libraryService.updateYourItemCategory(editingRow.itemCategoryId, itemForm);
-          // If subcategory name is provided and item category doesn't have one, create it
-          if (newSubCategoryName.trim() && (editingRow.subCategory === '-' || !editingRow.subCategory)) {
-            await libraryService.createYourSubCategory({
-              name: newSubCategoryName.trim(),
-              itemCategoryId: editingRow.itemCategoryId!,
-            });
-          }
         } else if (formType === 'sub' && editingRow.subCategoryId) {
           await libraryService.updateYourSubCategory(editingRow.subCategoryId, subForm);
         }
@@ -681,6 +670,32 @@ const CategoryMasterTab: React.FC<CategoryMasterTabProps> = ({
             className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
           />
         </div>
+        <div className="flex items-center gap-3">
+          {/* Toggle for Complete/All */}
+          <div className="flex items-center gap-2 bg-gray-50 px-3 py-2 rounded-lg border border-gray-200">
+            <span className={`text-xs font-medium ${!showCompleteOnly ? 'text-gray-900' : 'text-gray-500'}`}>
+              All
+            </span>
+            <button
+              type="button"
+              onClick={() => setShowCompleteOnly(!showCompleteOnly)}
+              className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 ${
+                showCompleteOnly ? 'bg-blue-600' : 'bg-gray-300'
+              }`}
+              role="switch"
+              aria-checked={showCompleteOnly}
+            >
+              <span
+                className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${
+                  showCompleteOnly ? 'translate-x-5' : 'translate-x-0.5'
+                }`}
+              />
+            </button>
+            <span className={`text-xs font-medium ${showCompleteOnly ? 'text-gray-900' : 'text-gray-500'}`}>
+              Complete Only
+            </span>
+          </div>
+        </div>
         <div className="flex flex-wrap gap-2">
           <button
             onClick={() => navigate('/app/library/categories/manage')}
@@ -748,20 +763,28 @@ const CategoryMasterTab: React.FC<CategoryMasterTabProps> = ({
                       {row.subCategory}
                     </td>
                     <td className="px-3 py-2 text-xs text-gray-500 text-center">
-                      {row.createdAt ? formatDate(row.createdAt) : '-'}
+                      {row.createdAt ? formatDate(row.createdAt) : '—'}
                     </td>
                     <td className="px-3 py-2 text-xs text-center">
                       <div className="flex items-center justify-center gap-2">
                         <button
-                          onClick={() => navigate(`/app/library/categories/edit/${row.id}`)}
-                          className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                          onClick={() => {
+                            if (row.type === 'product' && row.productCategoryId) {
+                              handleOpenDialog('product', row);
+                            } else if (row.type === 'item' && row.itemCategoryId) {
+                              handleOpenDialog('item', row);
+                            } else if (row.type === 'sub' && row.subCategoryId) {
+                              handleOpenDialog('sub', row);
+                            }
+                          }}
+                          className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                           title="Edit"
                         >
                           <Edit className="w-3.5 h-3.5" />
                         </button>
                         <button
                           onClick={() => handleDelete(row)}
-                          className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                          className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                           title="Delete"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
@@ -857,29 +880,20 @@ const CategoryMasterTab: React.FC<CategoryMasterTabProps> = ({
                       <label className="block text-xs font-medium text-gray-700 mb-1">
                         Product Category <span className="text-red-500">*</span>
                       </label>
-                      {editingRow ? (
-                        <input
-                          type="text"
-                          value={editingRow.productCategory || ''}
-                          disabled
-                          className="w-full px-3 py-2 border rounded-lg bg-gray-100 text-gray-700 text-sm cursor-not-allowed"
-                        />
-                      ) : (
-                        <select
-                          value={itemForm.productCategoryId}
-                          onChange={(e) => setItemForm({ ...itemForm, productCategoryId: parseInt(e.target.value) })}
-                          className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm ${
-                            errors.productCategoryId ? 'border-red-500' : 'border-gray-300'
-                          }`}
-                        >
-                          <option value="0">Select Product Category</option>
-                          {availableProductCategories.map((pc) => (
-                            <option key={pc.id} value={pc.id}>
-                              {pc.name}
-                            </option>
-                          ))}
-                        </select>
-                      )}
+                      <select
+                        value={itemForm.productCategoryId}
+                        onChange={(e) => setItemForm({ ...itemForm, productCategoryId: parseInt(e.target.value) })}
+                        className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm ${
+                          errors.productCategoryId ? 'border-red-500' : 'border-gray-300'
+                        }`}
+                      >
+                        <option value="0">Select Product Category</option>
+                        {availableProductCategories.map((pc) => (
+                          <option key={pc.id} value={pc.id}>
+                            {pc.name}
+                          </option>
+                        ))}
+                      </select>
                       {errors.productCategoryId && <p className="text-red-500 text-xs mt-1">{errors.productCategoryId}</p>}
                     </div>
 
@@ -934,23 +948,6 @@ const CategoryMasterTab: React.FC<CategoryMasterTabProps> = ({
                           }`}
                         />
                         {errors.name && <p className="text-red-500 text-xs mt-1">{errors.name}</p>}
-                      </div>
-                    )}
-                    
-                    {/* Add subcategory field when editing item category that doesn't have one */}
-                    {editingRow && (editingRow.subCategory === '-' || !editingRow.subCategory) && (
-                      <div>
-                        <label className="block text-xs font-medium text-gray-700 mb-1">
-                          Sub Category Name (Optional)
-                        </label>
-                        <input
-                          type="text"
-                          value={newSubCategoryName}
-                          onChange={(e) => setNewSubCategoryName(e.target.value)}
-                          placeholder="Enter sub category name to add"
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm"
-                        />
-                        <p className="text-xs text-gray-500 mt-1">Leave empty if you don't want to add a subcategory</p>
                       </div>
                     )}
                   </>
@@ -1097,9 +1094,9 @@ const CategoryMasterTab: React.FC<CategoryMasterTabProps> = ({
                         {uploadPreviewData.rows.map((row, index) => (
                           <tr key={index} className="hover:bg-gray-50">
                             <td className="px-4 py-2 text-sm text-gray-600">{index + 1}</td>
-                            <td className="px-4 py-2 text-sm text-gray-900">{row.productCategory || '-'}</td>
-                            <td className="px-4 py-2 text-sm text-gray-900">{row.itemCategory || '-'}</td>
-                            <td className="px-4 py-2 text-sm text-gray-900">{row.subCategory || '-'}</td>
+                            <td className="px-4 py-2 text-sm text-gray-900">{row.productCategory || '—'}</td>
+                            <td className="px-4 py-2 text-sm text-gray-900">{row.itemCategory || '—'}</td>
+                            <td className="px-4 py-2 text-sm text-gray-900">{row.subCategory || '—'}</td>
                           </tr>
                         ))}
                       </tbody>
