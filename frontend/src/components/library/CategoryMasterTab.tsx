@@ -360,23 +360,37 @@ const CategoryMasterTab: React.FC<CategoryMasterTabProps> = ({
 
     const newErrors: Record<string, string> = {};
 
-    if (formType === 'product') {
-      if (!validateRequired(productForm.name)) {
-        newErrors.name = 'Category Name is required';
+    if (editingRow) {
+      // Validation for unified edit form - all three fields are mandatory
+      if (!validateRequired(unifiedEditForm.productCategory || '')) {
+        newErrors.productCategory = 'Product Category is required';
       }
-    } else if (formType === 'item') {
-      if (!validateRequired(itemForm.name)) {
-        newErrors.name = 'Category Name is required';
+      if (!validateRequired(unifiedEditForm.itemCategory || '')) {
+        newErrors.itemCategory = 'Item Category is required';
       }
-      if (!itemForm.productCategoryId || itemForm.productCategoryId === 0) {
-        newErrors.productCategoryId = 'Product Category is required';
+      if (!validateRequired(unifiedEditForm.subCategory || '')) {
+        newErrors.subCategory = 'Sub Category is required';
       }
-    } else if (formType === 'sub') {
-      if (!validateRequired(subForm.name)) {
-        newErrors.name = 'Category Name is required';
-      }
-      if (!subForm.itemCategoryId || subForm.itemCategoryId === 0) {
-        newErrors.itemCategoryId = 'Item Category is required';
+    } else {
+      // Validation for add mode
+      if (formType === 'product') {
+        if (!validateRequired(productForm.name)) {
+          newErrors.name = 'Category Name is required';
+        }
+      } else if (formType === 'item') {
+        if (!validateRequired(itemForm.name)) {
+          newErrors.name = 'Category Name is required';
+        }
+        if (!itemForm.productCategoryId || itemForm.productCategoryId === 0) {
+          newErrors.productCategoryId = 'Product Category is required';
+        }
+      } else if (formType === 'sub') {
+        if (!validateRequired(subForm.name)) {
+          newErrors.name = 'Category Name is required';
+        }
+        if (!subForm.itemCategoryId || subForm.itemCategoryId === 0) {
+          newErrors.itemCategoryId = 'Item Category is required';
+        }
       }
     }
 
@@ -388,18 +402,50 @@ const CategoryMasterTab: React.FC<CategoryMasterTabProps> = ({
     try {
       setSaving(true);
       if (editingRow) {
-        // When editing, handle all three fields - all are editable
+        // When editing, handle all three fields - all are mandatory and editable
         if (editingRow.type === 'product' && editingRow.productCategoryId) {
           // Update product category
           await libraryService.updateYourProductCategory(editingRow.productCategoryId, {
             name: unifiedEditForm.productCategory.trim()
           });
-          // Create item category if provided and it's new (was empty before)
-          if (unifiedEditForm.itemCategory.trim() && (editingRow.itemCategory === '-' || !editingRow.itemCategory)) {
-            await libraryService.createYourItemCategory({
-              name: unifiedEditForm.itemCategory.trim(),
-              productCategoryId: editingRow.productCategoryId
-            });
+          // Create or update item category (mandatory)
+          if (unifiedEditForm.itemCategory.trim()) {
+            if (editingRow.itemCategoryId) {
+              // Update existing item category
+              await libraryService.updateYourItemCategory(editingRow.itemCategoryId, {
+                name: unifiedEditForm.itemCategory.trim(),
+                productCategoryId: editingRow.productCategoryId
+              });
+              // Create or update sub category (mandatory)
+              if (unifiedEditForm.subCategory.trim()) {
+                if (editingRow.subCategoryId) {
+                  // Update existing sub category
+                  await libraryService.updateYourSubCategory(editingRow.subCategoryId, {
+                    name: unifiedEditForm.subCategory.trim(),
+                    itemCategoryId: editingRow.itemCategoryId
+                  });
+                } else {
+                  // Create new sub category
+                  await libraryService.createYourSubCategory({
+                    name: unifiedEditForm.subCategory.trim(),
+                    itemCategoryId: editingRow.itemCategoryId
+                  });
+                }
+              }
+            } else {
+              // Create new item category
+              const newItemCat = await libraryService.createYourItemCategory({
+                name: unifiedEditForm.itemCategory.trim(),
+                productCategoryId: editingRow.productCategoryId
+              });
+              // Create sub category (mandatory)
+              if (unifiedEditForm.subCategory.trim()) {
+                await libraryService.createYourSubCategory({
+                  name: unifiedEditForm.subCategory.trim(),
+                  itemCategoryId: newItemCat.data.id
+                });
+              }
+            }
           }
         } else if (editingRow.type === 'item' && editingRow.itemCategoryId) {
           // Find or get product category ID
@@ -420,18 +466,39 @@ const CategoryMasterTab: React.FC<CategoryMasterTabProps> = ({
             productCategoryId: productCatId || editingRow.productCategoryId
           });
           
-          // Create sub category if provided and it's new (was empty before)
-          if (unifiedEditForm.subCategory.trim() && (editingRow.subCategory === '-' || !editingRow.subCategory || editingRow.subCategory.trim() === '')) {
-            await libraryService.createYourSubCategory({
-              name: unifiedEditForm.subCategory.trim(),
-              itemCategoryId: editingRow.itemCategoryId
-            });
+          // Create or update sub category (mandatory)
+          if (unifiedEditForm.subCategory.trim()) {
+            if (editingRow.subCategoryId) {
+              // Update existing sub category
+              await libraryService.updateYourSubCategory(editingRow.subCategoryId, {
+                name: unifiedEditForm.subCategory.trim(),
+                itemCategoryId: editingRow.itemCategoryId
+              });
+            } else {
+              // Create new sub category
+              await libraryService.createYourSubCategory({
+                name: unifiedEditForm.subCategory.trim(),
+                itemCategoryId: editingRow.itemCategoryId
+              });
+            }
           }
         } else if (editingRow.type === 'sub' && editingRow.subCategoryId) {
+          // Find or get item category ID
+          let itemCatId = unifiedEditForm.itemCategoryId;
+          if (!itemCatId && unifiedEditForm.itemCategory.trim()) {
+            const itemCats = await libraryService.getYourItemCategories();
+            const found = itemCats.data?.find((ic: any) => 
+              ic.name.toLowerCase() === unifiedEditForm.itemCategory.trim().toLowerCase()
+            );
+            if (found) {
+              itemCatId = found.id;
+            }
+          }
+          
           // Update sub category
           await libraryService.updateYourSubCategory(editingRow.subCategoryId, {
             name: unifiedEditForm.subCategory.trim(),
-            itemCategoryId: unifiedEditForm.itemCategoryId || editingRow.itemCategoryId
+            itemCategoryId: itemCatId || editingRow.itemCategoryId
           });
         }
       } else {
@@ -962,13 +1029,13 @@ const CategoryMasterTab: React.FC<CategoryMasterTabProps> = ({
 
                     <div>
                       <label className="block text-xs font-medium text-gray-700 mb-1">
-                        Sub Category
+                        Sub Category <span className="text-red-500">*</span>
                       </label>
                       <input
                         type="text"
                         value={unifiedEditForm.subCategory}
                         onChange={(e) => setUnifiedEditForm({ ...unifiedEditForm, subCategory: e.target.value })}
-                        placeholder="Enter sub category name (optional)"
+                        placeholder="Enter sub category name"
                         className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 text-sm ${
                           errors.subCategory ? 'border-red-500' : 'border-gray-300'
                         }`}
