@@ -8,6 +8,8 @@ import * as XLSX from 'xlsx';
 interface Team {
   id: number;
   name: string;
+  firstName?: string;
+  lastName?: string;
   contactNumber: string;
   emailId: string;
   department: string;
@@ -60,7 +62,8 @@ const TeamsTab: React.FC<TeamsTabProps> = ({ teams, loading, onRefresh }) => {
   const [designationDropdownPosition, setDesignationDropdownPosition] = useState({ top: 0, left: 0, width: 0 });
 
   const [teamForm, setTeamForm] = useState<Partial<Team>>({
-    name: '',
+    firstName: '',
+    lastName: '',
     contactNumber: '',
     emailId: '',
     department: '',
@@ -71,15 +74,22 @@ const TeamsTab: React.FC<TeamsTabProps> = ({ teams, loading, onRefresh }) => {
   const handleOpenDialog = (team?: Team) => {
     if (team) {
       setEditingTeam(team);
+      // Split name into firstName and lastName
+      const nameParts = team.name ? team.name.trim().split(/\s+/) : [];
+      const firstName = nameParts[0] || '';
+      const lastName = nameParts.slice(1).join(' ') || '';
       setTeamForm({
         ...team,
+        firstName,
+        lastName,
       });
       setDepartmentInput(team.department || '');
       setDesignationInput(team.designation || '');
     } else {
       setEditingTeam(null);
       setTeamForm({
-        name: '',
+        firstName: '',
+        lastName: '',
         contactNumber: '',
         emailId: '',
         department: '',
@@ -213,7 +223,7 @@ const TeamsTab: React.FC<TeamsTabProps> = ({ teams, loading, onRefresh }) => {
     };
   }, []);
 
-  const handleNameChange = (value: string) => {
+  const handleFirstNameChange = (value: string) => {
     // Only allow letters, spaces, hyphens, apostrophes, and periods
     // Max 25 characters
     let filteredValue = value.replace(/[^A-Za-z\s\-'\.]/g, '');
@@ -222,13 +232,33 @@ const TeamsTab: React.FC<TeamsTabProps> = ({ teams, loading, onRefresh }) => {
     }
     setTeamForm({
       ...teamForm,
-      name: filteredValue,
+      firstName: filteredValue,
     });
-    // Clear name error when user starts typing
-    if (errors.name) {
+    // Clear firstName error when user starts typing
+    if (errors.firstName) {
       setErrors(prev => ({
         ...prev,
-        name: undefined,
+        firstName: undefined,
+      }));
+    }
+  };
+
+  const handleLastNameChange = (value: string) => {
+    // Only allow letters, spaces, hyphens, apostrophes, and periods
+    // Max 25 characters
+    let filteredValue = value.replace(/[^A-Za-z\s\-'\.]/g, '');
+    if (filteredValue.length > 25) {
+      filteredValue = filteredValue.substring(0, 25);
+    }
+    setTeamForm({
+      ...teamForm,
+      lastName: filteredValue,
+    });
+    // Clear lastName error when user starts typing
+    if (errors.lastName) {
+      setErrors(prev => ({
+        ...prev,
+        lastName: undefined,
       }));
     }
   };
@@ -255,9 +285,10 @@ const TeamsTab: React.FC<TeamsTabProps> = ({ teams, loading, onRefresh }) => {
   const handleSave = async () => {
     const newErrors: Record<string, string> = {};
     
-    if (!validateRequired(teamForm.name || '')) {
-      newErrors.name = 'Name is required';
+    if (!validateRequired(teamForm.firstName || '')) {
+      newErrors.firstName = 'First Name is required';
     }
+    // Last Name is optional - no validation needed
     if (!validateRequired(teamForm.contactNumber || '')) {
       newErrors.contactNumber = 'Contact Number is required';
     } else if (!validatePhone(teamForm.contactNumber || '')) {
@@ -282,10 +313,19 @@ const TeamsTab: React.FC<TeamsTabProps> = ({ teams, loading, onRefresh }) => {
 
     try {
       setSaving(true);
+      // Combine firstName and lastName into name for API
+      const formData = {
+        ...teamForm,
+        name: `${teamForm.firstName || ''} ${teamForm.lastName || ''}`.trim(),
+      };
+      // Remove firstName and lastName from the payload
+      delete formData.firstName;
+      delete formData.lastName;
+      
       if (editingTeam) {
-        await libraryService.updateTeam(editingTeam.id, teamForm);
+        await libraryService.updateTeam(editingTeam.id, formData);
       } else {
-        await libraryService.createTeam(teamForm);
+        await libraryService.createTeam(formData);
       }
       setShowDialog(false);
       onRefresh();
@@ -313,7 +353,8 @@ const TeamsTab: React.FC<TeamsTabProps> = ({ teams, loading, onRefresh }) => {
   const handleDownloadTemplate = () => {
     const templateData = [
       {
-        'Name': '',
+        'First Name': '',
+        'Last Name': '',
         'Contact Number': '',
         'Email ID': '',
         'Department': '',
@@ -327,7 +368,8 @@ const TeamsTab: React.FC<TeamsTabProps> = ({ teams, loading, onRefresh }) => {
     
     // Set column widths
     ws['!cols'] = [
-      { wch: 25 }, // Name
+      { wch: 15 }, // First Name
+      { wch: 15 }, // Last Name
       { wch: 18 }, // Contact Number
       { wch: 25 }, // Email ID
       { wch: 20 }, // Department
@@ -373,13 +415,17 @@ const TeamsTab: React.FC<TeamsTabProps> = ({ teams, loading, onRefresh }) => {
     }
   };
 
-  const filteredTeams = teams.filter((team) =>
-    team.name.toLowerCase().includes(search.toLowerCase()) ||
-    team.contactNumber?.toLowerCase().includes(search.toLowerCase()) ||
-    team.emailId?.toLowerCase().includes(search.toLowerCase()) ||
-    team.department?.toLowerCase().includes(search.toLowerCase()) ||
-    team.designation?.toLowerCase().includes(search.toLowerCase())
-  );
+  const filteredTeams = teams.filter((team) => {
+    const nameLower = team.name?.toLowerCase() || '';
+    const searchLower = search.toLowerCase();
+    return (
+      nameLower.includes(searchLower) ||
+      team.contactNumber?.toLowerCase().includes(searchLower) ||
+      team.emailId?.toLowerCase().includes(searchLower) ||
+      team.department?.toLowerCase().includes(searchLower) ||
+      team.designation?.toLowerCase().includes(searchLower)
+    );
+  });
 
   return (
     <>
@@ -440,7 +486,8 @@ const TeamsTab: React.FC<TeamsTabProps> = ({ teams, loading, onRefresh }) => {
               <table className="w-full">
                 <thead className="bg-gray-50 border-b border-gray-200">
                   <tr>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Name</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">First Name</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Last Name</th>
                     <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Contact Number</th>
                     <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Email ID</th>
                     <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Department</th>
@@ -451,36 +498,42 @@ const TeamsTab: React.FC<TeamsTabProps> = ({ teams, loading, onRefresh }) => {
                 <tbody className="divide-y divide-gray-200">
                   {filteredTeams.length === 0 ? (
                     <tr>
-                      <td colSpan={6} className="px-4 py-8 text-center text-gray-500">No team members found</td>
+                      <td colSpan={7} className="px-4 py-8 text-center text-gray-500">No team members found</td>
                     </tr>
                   ) : (
-                    filteredTeams.map((team) => (
-                      <tr key={team.id} className="hover:bg-gray-50">
-                        <td className="px-4 py-3 text-sm font-medium text-gray-900">{team.name}</td>
-                        <td className="px-4 py-3 text-sm text-gray-700">{team.contactNumber || '-'}</td>
-                        <td className="px-4 py-3 text-sm text-gray-700">{team.emailId || '-'}</td>
-                        <td className="px-4 py-3 text-sm text-gray-700">{team.department || '-'}</td>
-                        <td className="px-4 py-3 text-sm text-gray-700">{team.designation || '-'}</td>
-                        <td className="px-4 py-3 text-sm">
-                          <div className="flex items-center gap-2">
-                            <button
-                              onClick={() => handleOpenDialog(team)}
-                              className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg"
-                              title="Edit"
-                            >
-                              <Edit className="w-4 h-4" />
-                            </button>
-                            <button
-                              onClick={() => handleDelete(team.id)}
-                              className="p-2 text-red-600 hover:bg-red-50 rounded-lg"
-                              title="Delete"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))
+                    filteredTeams.map((team) => {
+                      const nameParts = team.name ? team.name.trim().split(/\s+/) : [];
+                      const firstName = nameParts[0] || '-';
+                      const lastName = nameParts.slice(1).join(' ') || '-';
+                      return (
+                        <tr key={team.id} className="hover:bg-gray-50">
+                          <td className="px-4 py-3 text-sm font-medium text-gray-900">{firstName}</td>
+                          <td className="px-4 py-3 text-sm font-medium text-gray-900">{lastName}</td>
+                          <td className="px-4 py-3 text-sm text-gray-700">{team.contactNumber || '-'}</td>
+                          <td className="px-4 py-3 text-sm text-gray-700">{team.emailId || '-'}</td>
+                          <td className="px-4 py-3 text-sm text-gray-700">{team.department || '-'}</td>
+                          <td className="px-4 py-3 text-sm text-gray-700">{team.designation || '-'}</td>
+                          <td className="px-4 py-3 text-sm">
+                            <div className="flex items-center gap-2">
+                              <button
+                                onClick={() => handleOpenDialog(team)}
+                                className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg"
+                                title="Edit"
+                              >
+                                <Edit className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => handleDelete(team.id)}
+                                className="p-2 text-red-600 hover:bg-red-50 rounded-lg"
+                                title="Delete"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })
                   )}
                 </tbody>
               </table>
@@ -506,23 +559,43 @@ const TeamsTab: React.FC<TeamsTabProps> = ({ teams, loading, onRefresh }) => {
                 </button>
               </div>
               <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Name <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    value={teamForm.name}
-                    onChange={(e) => handleNameChange(e.target.value)}
-                    maxLength={25}
-                    pattern="[A-Za-z\s\-'\.]+"
-                    className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${
-                      errors.name ? 'border-red-500' : 'border-gray-300'
-                    }`}
-                    placeholder="Enter name"
-                    title="Name should contain only letters, spaces, hyphens, and apostrophes (max 25 characters)"
-                  />
-                  {errors.name && <p className="text-red-500 text-xs mt-1">{errors.name}</p>}
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      First Name <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={teamForm.firstName || ''}
+                      onChange={(e) => handleFirstNameChange(e.target.value)}
+                      maxLength={25}
+                      pattern="[A-Za-z\s\-'\.]+"
+                      className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${
+                        errors.firstName ? 'border-red-500' : 'border-gray-300'
+                      }`}
+                      placeholder="Enter first name"
+                      title="First name should contain only letters, spaces, hyphens, and apostrophes (max 25 characters)"
+                    />
+                    {errors.firstName && <p className="text-red-500 text-xs mt-1">{errors.firstName}</p>}
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Last Name
+                    </label>
+                    <input
+                      type="text"
+                      value={teamForm.lastName || ''}
+                      onChange={(e) => handleLastNameChange(e.target.value)}
+                      maxLength={25}
+                      pattern="[A-Za-z\s\-'\.]+"
+                      className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${
+                        errors.lastName ? 'border-red-500' : 'border-gray-300'
+                      }`}
+                      placeholder="Enter last name (optional)"
+                      title="Last name should contain only letters, spaces, hyphens, and apostrophes (max 25 characters)"
+                    />
+                    {errors.lastName && <p className="text-red-500 text-xs mt-1">{errors.lastName}</p>}
+                  </div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
