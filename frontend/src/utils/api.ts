@@ -6,6 +6,10 @@ const isLocalhost = typeof window !== 'undefined' &&
 
 // Backend URL - Use environment variable (Railway) or detect based on hostname
 const VITE_API_URL = (import.meta.env as any).VITE_API_URL;
+// Debug: Log what we're getting from env
+console.log('[API DEBUG] import.meta.env.VITE_API_URL:', VITE_API_URL);
+console.log('[API DEBUG] import.meta.env keys:', Object.keys(import.meta.env));
+
 const BACKEND_URL = VITE_API_URL || 
   (isLocalhost
     ? 'http://localhost:5000'  // Development: local backend

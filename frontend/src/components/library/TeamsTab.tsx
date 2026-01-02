@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { Plus, Search, Edit, Trash2, X, Upload, Download } from 'lucide-react';
 import { libraryService } from '../../services/libraryService';
 import { validateRequired, validateEmail, validatePhone } from '../../utils/validators';
@@ -53,6 +54,10 @@ const TeamsTab: React.FC<TeamsTabProps> = ({ teams, loading, onRefresh }) => {
   const [showDesignationDropdown, setShowDesignationDropdown] = useState(false);
   const departmentInputRef = useRef<HTMLDivElement>(null);
   const designationInputRef = useRef<HTMLDivElement>(null);
+  const departmentInputElementRef = useRef<HTMLInputElement>(null);
+  const designationInputElementRef = useRef<HTMLInputElement>(null);
+  const [departmentDropdownPosition, setDepartmentDropdownPosition] = useState({ top: 0, left: 0, width: 0 });
+  const [designationDropdownPosition, setDesignationDropdownPosition] = useState({ top: 0, left: 0, width: 0 });
 
   const [teamForm, setTeamForm] = useState<Partial<Team>>({
     name: '',
@@ -138,6 +143,58 @@ const TeamsTab: React.FC<TeamsTabProps> = ({ teams, loading, onRefresh }) => {
   const filteredDesignations = availableDesignations.filter(des =>
     des.toLowerCase().includes(designationInput.toLowerCase())
   );
+
+  // Calculate dropdown position
+  const updateDepartmentDropdownPosition = () => {
+    if (departmentInputElementRef.current) {
+      const rect = departmentInputElementRef.current.getBoundingClientRect();
+      setDepartmentDropdownPosition({
+        top: rect.bottom + window.scrollY,
+        left: rect.left + window.scrollX,
+        width: rect.width,
+      });
+    }
+  };
+
+  const updateDesignationDropdownPosition = () => {
+    if (designationInputElementRef.current) {
+      const rect = designationInputElementRef.current.getBoundingClientRect();
+      setDesignationDropdownPosition({
+        top: rect.bottom + window.scrollY,
+        left: rect.left + window.scrollX,
+        width: rect.width,
+      });
+    }
+  };
+
+  // Update dropdown positions when they open
+  useEffect(() => {
+    if (showDepartmentDropdown) {
+      updateDepartmentDropdownPosition();
+      const handleScroll = () => updateDepartmentDropdownPosition();
+      const handleResize = () => updateDepartmentDropdownPosition();
+      window.addEventListener('scroll', handleScroll, true);
+      window.addEventListener('resize', handleResize);
+      return () => {
+        window.removeEventListener('scroll', handleScroll, true);
+        window.removeEventListener('resize', handleResize);
+      };
+    }
+  }, [showDepartmentDropdown]);
+
+  useEffect(() => {
+    if (showDesignationDropdown) {
+      updateDesignationDropdownPosition();
+      const handleScroll = () => updateDesignationDropdownPosition();
+      const handleResize = () => updateDesignationDropdownPosition();
+      window.addEventListener('scroll', handleScroll, true);
+      window.addEventListener('resize', handleResize);
+      return () => {
+        window.removeEventListener('scroll', handleScroll, true);
+        window.removeEventListener('resize', handleResize);
+      };
+    }
+  }, [showDesignationDropdown]);
 
   // Close dropdowns when clicking outside
   useEffect(() => {
@@ -522,19 +579,32 @@ const TeamsTab: React.FC<TeamsTabProps> = ({ teams, loading, onRefresh }) => {
                             setErrors(prev => ({ ...prev, department: undefined }));
                           }
                         }}
-                        onFocus={() => setShowDepartmentDropdown(true)}
+                        onFocus={() => {
+                          setShowDepartmentDropdown(true);
+                          updateDepartmentDropdownPosition();
+                        }}
                         placeholder="Type or select department"
                         className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 pr-10 ${
                           errors.department ? 'border-red-500' : 'border-gray-300'
                         }`}
+                        ref={departmentInputElementRef}
                       />
                       <div className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
                         <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                         </svg>
                       </div>
-                      {showDepartmentDropdown && filteredDepartments.length > 0 && (
-                        <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-auto">
+                      {showDepartmentDropdown && filteredDepartments.length > 0 && createPortal(
+                        <div
+                          style={{
+                            position: 'fixed',
+                            top: `${departmentDropdownPosition.top}px`,
+                            left: `${departmentDropdownPosition.left}px`,
+                            width: `${departmentDropdownPosition.width}px`,
+                            zIndex: 9999,
+                          }}
+                          className="mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-auto"
+                        >
                           {filteredDepartments.map((dept) => (
                             <div
                               key={dept}
@@ -544,7 +614,8 @@ const TeamsTab: React.FC<TeamsTabProps> = ({ teams, loading, onRefresh }) => {
                               {dept}
                             </div>
                           ))}
-                        </div>
+                        </div>,
+                        document.body
                       )}
                     </div>
                     {errors.department && <p className="text-red-500 text-xs mt-1">{errors.department}</p>}
@@ -570,6 +641,7 @@ const TeamsTab: React.FC<TeamsTabProps> = ({ teams, loading, onRefresh }) => {
                         onFocus={() => {
                           if (teamForm.department) {
                             setShowDesignationDropdown(true);
+                            updateDesignationDropdownPosition();
                           }
                         }}
                         disabled={!teamForm.department}
@@ -577,14 +649,24 @@ const TeamsTab: React.FC<TeamsTabProps> = ({ teams, loading, onRefresh }) => {
                         className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 pr-10 ${
                           errors.designation ? 'border-red-500' : 'border-gray-300'
                         } ${!teamForm.department ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                        ref={designationInputElementRef}
                       />
                       <div className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
                         <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                         </svg>
                       </div>
-                      {showDesignationDropdown && teamForm.department && filteredDesignations.length > 0 && (
-                        <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-auto">
+                      {showDesignationDropdown && teamForm.department && filteredDesignations.length > 0 && createPortal(
+                        <div
+                          style={{
+                            position: 'fixed',
+                            top: `${designationDropdownPosition.top}px`,
+                            left: `${designationDropdownPosition.left}px`,
+                            width: `${designationDropdownPosition.width}px`,
+                            zIndex: 9999,
+                          }}
+                          className="mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-auto"
+                        >
                           {filteredDesignations.map((designation) => (
                             <div
                               key={designation}
@@ -594,7 +676,8 @@ const TeamsTab: React.FC<TeamsTabProps> = ({ teams, loading, onRefresh }) => {
                               {designation}
                             </div>
                           ))}
-                        </div>
+                        </div>,
+                        document.body
                       )}
                     </div>
                     {errors.designation && <p className="text-red-500 text-xs mt-1">{errors.designation}</p>}
