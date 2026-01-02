@@ -152,6 +152,35 @@ export default function AddManageCategoriesPage() {
     return productSelected.filter((t) => !t.isDeleted);
   };
 
+  // Helper: Check if any item categories are selected for any product
+  const hasAnyItemCategories = () => {
+    const selectedProducts = getSelectedProducts();
+    return selectedProducts.some((product) => {
+      const productId = product.id;
+      if (!productId) return false;
+      const items = itemsByProduct[productId] || [];
+      return items.some((item) => !item.isDeleted);
+    });
+  };
+
+  // Helper: Check if any sub categories are selected for any item
+  const hasAnySubCategories = () => {
+    const selectedProducts = getSelectedProducts();
+    for (const product of selectedProducts) {
+      const productId = product.id;
+      if (!productId) continue;
+      const itemsForProduct = getItemsForProduct(productId);
+      for (const item of itemsForProduct) {
+        const key = getKey(productId, item.id);
+        const subs = subsByProductItem[key] || [];
+        if (subs.some((sub) => !sub.isDeleted)) {
+          return true;
+        }
+      }
+    }
+    return false;
+  };
+
   const productInputRef = useRef<HTMLInputElement>(null);
   const pendingNavStateRef = useRef<any>((location as any).state || null);
   const wizardContainerRef = useRef<HTMLDivElement>(null);
@@ -1251,8 +1280,8 @@ export default function AddManageCategoriesPage() {
                   <button
                     type="button"
                     onClick={goNextFromItem}
-                    disabled={getSelectedProducts().length === 0}
-                    className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-900 text-white text-sm font-semibold hover:bg-black disabled:opacity-50"
+                    disabled={getSelectedProducts().length === 0 || !hasAnyItemCategories()}
+                    className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-900 text-white text-sm font-semibold hover:bg-black disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <Save className="w-4 h-4" />
                     Save All and Next
@@ -1410,12 +1439,15 @@ export default function AddManageCategoriesPage() {
                     );
                   }
                   
+                  const hasSubs = hasAnySubCategories();
+                  
                   return (
                     <div className="mt-4 flex justify-end">
                       <button
                         type="button"
                         onClick={saveAllAndComplete}
-                        className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-900 text-white text-sm font-semibold hover:bg-black"
+                        disabled={!hasSubs}
+                        className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-900 text-white text-sm font-semibold hover:bg-black disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         <Save className="w-4 h-4" />
                         Save All and Next
