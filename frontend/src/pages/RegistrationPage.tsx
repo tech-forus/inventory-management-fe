@@ -504,7 +504,6 @@ const RegistrationPage: React.FC = () => {
                       errors.pin ? 'border-red-500' : 'border-gray-300'
                     }`}
                     placeholder="123456"
-                    maxLength={6}
                     title="PIN code should contain exactly 6 digits"
                   />
                 </div>
