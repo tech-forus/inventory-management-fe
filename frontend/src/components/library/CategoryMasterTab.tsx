@@ -98,8 +98,8 @@ const CategoryMasterTab: React.FC<CategoryMasterTabProps> = ({
         id: `product-${pc.id}`,
         type: 'product',
         productCategory: pc.name,
-        itemCategory: '-',
-        subCategory: '-',
+        itemCategory: '—',
+        subCategory: '—',
         createdAt: pc.createdAt || '',
         productCategoryId: pc.id,
       });
@@ -111,9 +111,9 @@ const CategoryMasterTab: React.FC<CategoryMasterTabProps> = ({
       rows.push({
         id: `item-${ic.id}`,
         type: 'item',
-        productCategory: productCat?.name || '-',
+        productCategory: productCat?.name || '—',
         itemCategory: ic.name,
-        subCategory: '-',
+        subCategory: '—',
         createdAt: ic.createdAt || '',
         productCategoryId: ic.productCategoryId,
         itemCategoryId: ic.id,
@@ -127,8 +127,8 @@ const CategoryMasterTab: React.FC<CategoryMasterTabProps> = ({
       rows.push({
         id: `sub-${sc.id}`,
         type: 'sub',
-        productCategory: productCat?.name || '-',
-        itemCategory: itemCat?.name || '-',
+        productCategory: productCat?.name || '—',
+        itemCategory: itemCat?.name || '—',
         subCategory: sc.name,
         createdAt: sc.createdAt || '',
         productCategoryId: productCat?.id,
@@ -164,28 +164,14 @@ const CategoryMasterTab: React.FC<CategoryMasterTabProps> = ({
   const filteredRows = unifiedRows.filter((row) => {
     const searchLower = search.toLowerCase();
 
-    // Always filter out incomplete rows (hide rows with missing or placeholder values)
-    const hasCompleteHierarchy =
-      row.productCategory &&
-      row.productCategory !== '-' &&
-      row.productCategory.trim() !== '' &&
-      row.itemCategory &&
-      row.itemCategory !== '-' &&
-      row.itemCategory.trim() !== '' &&
-      row.subCategory &&
-      row.subCategory !== '-' &&
-      row.subCategory.trim() !== '';
-
-    if (!hasCompleteHierarchy) return false;
-
-    // If no search term, show all complete rows
+    // If no search term, show all rows (including incomplete hierarchies)
     if (!searchLower) return true;
 
-    // Filter based on search term (only on complete rows)
+    // Filter based on search term (search across all columns, including incomplete rows)
     return (
-      row.productCategory.toLowerCase().includes(searchLower) ||
-      row.itemCategory.toLowerCase().includes(searchLower) ||
-      row.subCategory.toLowerCase().includes(searchLower)
+      (row.productCategory && row.productCategory !== '—' && row.productCategory.toLowerCase().includes(searchLower)) ||
+      (row.itemCategory && row.itemCategory !== '—' && row.itemCategory.toLowerCase().includes(searchLower)) ||
+      (row.subCategory && row.subCategory !== '—' && row.subCategory.toLowerCase().includes(searchLower))
     );
   });
 
@@ -736,20 +722,28 @@ const CategoryMasterTab: React.FC<CategoryMasterTabProps> = ({
                       {row.subCategory}
                     </td>
                     <td className="px-3 py-2 text-xs text-gray-500 text-center">
-                      {row.createdAt ? formatDate(row.createdAt) : '-'}
+                      {row.createdAt ? formatDate(row.createdAt) : '—'}
                     </td>
                     <td className="px-3 py-2 text-xs text-center">
                       <div className="flex items-center justify-center gap-2">
                         <button
-                          onClick={() => navigate(`/app/library/categories/edit/${row.id}`)}
-                          className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                          onClick={() => {
+                            if (row.type === 'product' && row.productCategoryId) {
+                              handleOpenDialog('product', row);
+                            } else if (row.type === 'item' && row.itemCategoryId) {
+                              handleOpenDialog('item', row);
+                            } else if (row.type === 'sub' && row.subCategoryId) {
+                              handleOpenDialog('sub', row);
+                            }
+                          }}
+                          className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                           title="Edit"
                         >
                           <Edit className="w-3.5 h-3.5" />
                         </button>
                         <button
                           onClick={() => handleDelete(row)}
-                          className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                          className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                           title="Delete"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
@@ -1059,9 +1053,9 @@ const CategoryMasterTab: React.FC<CategoryMasterTabProps> = ({
                         {uploadPreviewData.rows.map((row, index) => (
                           <tr key={index} className="hover:bg-gray-50">
                             <td className="px-4 py-2 text-sm text-gray-600">{index + 1}</td>
-                            <td className="px-4 py-2 text-sm text-gray-900">{row.productCategory || '-'}</td>
-                            <td className="px-4 py-2 text-sm text-gray-900">{row.itemCategory || '-'}</td>
-                            <td className="px-4 py-2 text-sm text-gray-900">{row.subCategory || '-'}</td>
+                            <td className="px-4 py-2 text-sm text-gray-900">{row.productCategory || '—'}</td>
+                            <td className="px-4 py-2 text-sm text-gray-900">{row.itemCategory || '—'}</td>
+                            <td className="px-4 py-2 text-sm text-gray-900">{row.subCategory || '—'}</td>
                           </tr>
                         ))}
                       </tbody>
