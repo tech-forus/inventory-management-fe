@@ -208,10 +208,11 @@ const CategoryMasterTab: React.FC<CategoryMasterTabProps> = ({
     if (row) {
       setEditingRow(row);
       // When editing, populate unified form with all data from the row
+      // Replace "-" with empty string to allow editing
       setUnifiedEditForm({
-        productCategory: row.productCategory !== '-' ? row.productCategory : '',
-        itemCategory: row.itemCategory !== '-' ? row.itemCategory : '',
-        subCategory: row.subCategory !== '-' ? row.subCategory : '',
+        productCategory: (row.productCategory && row.productCategory !== '-') ? row.productCategory : '',
+        itemCategory: (row.itemCategory && row.itemCategory !== '-') ? row.itemCategory : '',
+        subCategory: (row.subCategory && row.subCategory !== '-') ? row.subCategory : '',
         productCategoryId: row.productCategoryId || 0,
         itemCategoryId: row.itemCategoryId || 0,
         subCategoryId: row.subCategoryId || 0,
@@ -387,11 +388,11 @@ const CategoryMasterTab: React.FC<CategoryMasterTabProps> = ({
     try {
       setSaving(true);
       if (editingRow) {
-        // When editing, handle all three fields
+        // When editing, handle all three fields - all are editable
         if (editingRow.type === 'product' && editingRow.productCategoryId) {
           // Update product category
           await libraryService.updateYourProductCategory(editingRow.productCategoryId, {
-            name: unifiedEditForm.productCategory
+            name: unifiedEditForm.productCategory.trim()
           });
           // Create item category if provided and it's new (was empty before)
           if (unifiedEditForm.itemCategory.trim() && (editingRow.itemCategory === '-' || !editingRow.itemCategory)) {
@@ -401,13 +402,26 @@ const CategoryMasterTab: React.FC<CategoryMasterTabProps> = ({
             });
           }
         } else if (editingRow.type === 'item' && editingRow.itemCategoryId) {
+          // Find or get product category ID
+          let productCatId = unifiedEditForm.productCategoryId;
+          if (!productCatId && unifiedEditForm.productCategory.trim()) {
+            const productCats = await libraryService.getYourProductCategories();
+            const found = productCats.data?.find((pc: any) => 
+              pc.name.toLowerCase() === unifiedEditForm.productCategory.trim().toLowerCase()
+            );
+            if (found) {
+              productCatId = found.id;
+            }
+          }
+          
           // Update item category
           await libraryService.updateYourItemCategory(editingRow.itemCategoryId, {
-            name: unifiedEditForm.itemCategory,
-            productCategoryId: unifiedEditForm.productCategoryId
+            name: unifiedEditForm.itemCategory.trim(),
+            productCategoryId: productCatId || editingRow.productCategoryId
           });
+          
           // Create sub category if provided and it's new (was empty before)
-          if (unifiedEditForm.subCategory.trim() && (editingRow.subCategory === '-' || !editingRow.subCategory)) {
+          if (unifiedEditForm.subCategory.trim() && (editingRow.subCategory === '-' || !editingRow.subCategory || editingRow.subCategory.trim() === '')) {
             await libraryService.createYourSubCategory({
               name: unifiedEditForm.subCategory.trim(),
               itemCategoryId: editingRow.itemCategoryId
@@ -416,8 +430,8 @@ const CategoryMasterTab: React.FC<CategoryMasterTabProps> = ({
         } else if (editingRow.type === 'sub' && editingRow.subCategoryId) {
           // Update sub category
           await libraryService.updateYourSubCategory(editingRow.subCategoryId, {
-            name: unifiedEditForm.subCategory,
-            itemCategoryId: unifiedEditForm.itemCategoryId
+            name: unifiedEditForm.subCategory.trim(),
+            itemCategoryId: unifiedEditForm.itemCategoryId || editingRow.itemCategoryId
           });
         }
       } else {
@@ -911,7 +925,7 @@ const CategoryMasterTab: React.FC<CategoryMasterTabProps> = ({
               )}
 
               <div className="space-y-4">
-                {/* When editing, show all three fields */}
+                {/* When editing, show all three fields - all editable */}
                 {editingRow ? (
                   <>
                     <div>
@@ -922,44 +936,42 @@ const CategoryMasterTab: React.FC<CategoryMasterTabProps> = ({
                         type="text"
                         value={unifiedEditForm.productCategory}
                         onChange={(e) => setUnifiedEditForm({ ...unifiedEditForm, productCategory: e.target.value })}
-                        disabled={editingRow.type !== 'product'}
+                        placeholder="Enter product category name"
                         className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 text-sm ${
                           errors.productCategory ? 'border-red-500' : 'border-gray-300'
-                        } ${editingRow.type !== 'product' ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                        }`}
                       />
                       {errors.productCategory && <p className="text-red-500 text-xs mt-1">{errors.productCategory}</p>}
                     </div>
 
                     <div>
                       <label className="block text-xs font-medium text-gray-700 mb-1">
-                        Item Category {editingRow.type === 'item' && <span className="text-red-500">*</span>}
+                        Item Category <span className="text-red-500">*</span>
                       </label>
                       <input
                         type="text"
                         value={unifiedEditForm.itemCategory}
                         onChange={(e) => setUnifiedEditForm({ ...unifiedEditForm, itemCategory: e.target.value })}
-                        disabled={editingRow.type === 'item' ? false : (editingRow.itemCategory !== '-' && editingRow.itemCategory !== '')}
-                        placeholder={editingRow.itemCategory === '-' || editingRow.itemCategory === '' ? 'Enter item category name' : ''}
+                        placeholder="Enter item category name"
                         className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 text-sm ${
                           errors.itemCategory ? 'border-red-500' : 'border-gray-300'
-                        } ${(editingRow.type !== 'item' && editingRow.itemCategory !== '-' && editingRow.itemCategory !== '') ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                        }`}
                       />
                       {errors.itemCategory && <p className="text-red-500 text-xs mt-1">{errors.itemCategory}</p>}
                     </div>
 
                     <div>
                       <label className="block text-xs font-medium text-gray-700 mb-1">
-                        Sub Category {editingRow.type === 'sub' && <span className="text-red-500">*</span>}
+                        Sub Category
                       </label>
                       <input
                         type="text"
                         value={unifiedEditForm.subCategory}
                         onChange={(e) => setUnifiedEditForm({ ...unifiedEditForm, subCategory: e.target.value })}
-                        disabled={editingRow.type === 'sub' ? false : (editingRow.subCategory !== '-' && editingRow.subCategory !== '')}
-                        placeholder={editingRow.subCategory === '-' || editingRow.subCategory === '' ? 'Enter sub category name' : ''}
+                        placeholder="Enter sub category name (optional)"
                         className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 text-sm ${
                           errors.subCategory ? 'border-red-500' : 'border-gray-300'
-                        } ${(editingRow.type !== 'sub' && editingRow.subCategory !== '-' && editingRow.subCategory !== '') ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                        }`}
                       />
                       {errors.subCategory && <p className="text-red-500 text-xs mt-1">{errors.subCategory}</p>}
                     </div>
