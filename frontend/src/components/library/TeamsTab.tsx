@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Plus, Search, Edit, Trash2, X, Upload, Download } from 'lucide-react';
 import { libraryService } from '../../services/libraryService';
 import { validateRequired, validateEmail, validatePhone } from '../../utils/validators';
@@ -45,6 +45,14 @@ const TeamsTab: React.FC<TeamsTabProps> = ({ teams, loading, onRefresh }) => {
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  // Autocomplete states
+  const [departmentInput, setDepartmentInput] = useState('');
+  const [showDepartmentDropdown, setShowDepartmentDropdown] = useState(false);
+  const [designationInput, setDesignationInput] = useState('');
+  const [showDesignationDropdown, setShowDesignationDropdown] = useState(false);
+  const departmentInputRef = useRef<HTMLDivElement>(null);
+  const designationInputRef = useRef<HTMLDivElement>(null);
 
   const [teamForm, setTeamForm] = useState<Partial<Team>>({
     name: '',
@@ -61,6 +69,8 @@ const TeamsTab: React.FC<TeamsTabProps> = ({ teams, loading, onRefresh }) => {
       setTeamForm({
         ...team,
       });
+      setDepartmentInput(team.department || '');
+      setDesignationInput(team.designation || '');
     } else {
       setEditingTeam(null);
       setTeamForm({
@@ -71,9 +81,13 @@ const TeamsTab: React.FC<TeamsTabProps> = ({ teams, loading, onRefresh }) => {
         designation: '',
         isActive: true,
       });
+      setDepartmentInput('');
+      setDesignationInput('');
     }
     setShowDialog(true);
     setErrors({});
+    setShowDepartmentDropdown(false);
+    setShowDesignationDropdown(false);
   };
 
   const handleDepartmentChange = (department: string) => {
@@ -82,6 +96,9 @@ const TeamsTab: React.FC<TeamsTabProps> = ({ teams, loading, onRefresh }) => {
       department,
       designation: '', // Clear designation when department changes
     });
+    setDepartmentInput(department);
+    setDesignationInput(''); // Clear designation input
+    setShowDepartmentDropdown(false);
     // Clear designation error when department changes
     if (errors.designation) {
       setErrors(prev => ({
@@ -96,6 +113,8 @@ const TeamsTab: React.FC<TeamsTabProps> = ({ teams, loading, onRefresh }) => {
       ...teamForm,
       designation,
     });
+    setDesignationInput(designation);
+    setShowDesignationDropdown(false);
     // Clear designation error when designation is selected
     if (errors.designation) {
       setErrors(prev => ({
@@ -104,6 +123,33 @@ const TeamsTab: React.FC<TeamsTabProps> = ({ teams, loading, onRefresh }) => {
       }));
     }
   };
+
+  // Filter departments based on input
+  const filteredDepartments = departments.filter(dept =>
+    dept.toLowerCase().includes(departmentInput.toLowerCase())
+  );
+
+  // Filter designations based on input
+  const filteredDesignations = availableDesignations.filter(des =>
+    des.toLowerCase().includes(designationInput.toLowerCase())
+  );
+
+  // Close dropdowns when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (departmentInputRef.current && !departmentInputRef.current.contains(event.target as Node)) {
+        setShowDepartmentDropdown(false);
+      }
+      if (designationInputRef.current && !designationInputRef.current.contains(event.target as Node)) {
+        setShowDesignationDropdown(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   const handleNameChange = (value: string) => {
     // Only allow letters, spaces, hyphens, apostrophes, and periods
@@ -458,47 +504,99 @@ const TeamsTab: React.FC<TeamsTabProps> = ({ teams, loading, onRefresh }) => {
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
-                  <div>
+                  <div ref={departmentInputRef} className="relative">
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Department <span className="text-red-500">*</span>
                     </label>
-                    <select
-                      value={teamForm.department || ''}
-                      onChange={(e) => handleDepartmentChange(e.target.value)}
-                      className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${
-                        errors.department ? 'border-red-500' : 'border-gray-300'
-                      }`}
-                    >
-                      <option value="">Select Department</option>
-                      {departments.map((dept) => (
-                        <option key={dept} value={dept}>
-                          {dept}
-                        </option>
-                      ))}
-                    </select>
+                    <div className="relative">
+                      <input
+                        type="text"
+                        value={departmentInput}
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          setDepartmentInput(value);
+                          setTeamForm({ ...teamForm, department: value });
+                          setShowDepartmentDropdown(true);
+                          // Clear error when typing
+                          if (errors.department) {
+                            setErrors(prev => ({ ...prev, department: undefined }));
+                          }
+                        }}
+                        onFocus={() => setShowDepartmentDropdown(true)}
+                        placeholder="Type or select department"
+                        className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 pr-10 ${
+                          errors.department ? 'border-red-500' : 'border-gray-300'
+                        }`}
+                      />
+                      <div className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
+                        <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </div>
+                      {showDepartmentDropdown && filteredDepartments.length > 0 && (
+                        <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-auto">
+                          {filteredDepartments.map((dept) => (
+                            <div
+                              key={dept}
+                              onClick={() => handleDepartmentChange(dept)}
+                              className="px-4 py-2 hover:bg-blue-50 cursor-pointer text-sm"
+                            >
+                              {dept}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                     {errors.department && <p className="text-red-500 text-xs mt-1">{errors.department}</p>}
                   </div>
-                  <div>
+                  <div ref={designationInputRef} className="relative">
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Designation <span className="text-red-500">*</span>
                     </label>
-                    <select
-                      value={teamForm.designation || ''}
-                      onChange={(e) => handleDesignationChange(e.target.value)}
-                      disabled={!teamForm.department}
-                      className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${
-                        errors.designation ? 'border-red-500' : 'border-gray-300'
-                      } ${!teamForm.department ? 'bg-gray-100 cursor-not-allowed' : ''}`}
-                    >
-                      <option value="">
-                        {teamForm.department ? 'Select Designation' : 'Select Department first'}
-                      </option>
-                      {availableDesignations.map((designation) => (
-                        <option key={designation} value={designation}>
-                          {designation}
-                        </option>
-                      ))}
-                    </select>
+                    <div className="relative">
+                      <input
+                        type="text"
+                        value={designationInput}
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          setDesignationInput(value);
+                          setTeamForm({ ...teamForm, designation: value });
+                          setShowDesignationDropdown(true);
+                          // Clear error when typing
+                          if (errors.designation) {
+                            setErrors(prev => ({ ...prev, designation: undefined }));
+                          }
+                        }}
+                        onFocus={() => {
+                          if (teamForm.department) {
+                            setShowDesignationDropdown(true);
+                          }
+                        }}
+                        disabled={!teamForm.department}
+                        placeholder={teamForm.department ? "Type or select designation" : "Select Department first"}
+                        className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 pr-10 ${
+                          errors.designation ? 'border-red-500' : 'border-gray-300'
+                        } ${!teamForm.department ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                      />
+                      <div className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
+                        <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </div>
+                      {showDesignationDropdown && teamForm.department && filteredDesignations.length > 0 && (
+                        <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-auto">
+                          {filteredDesignations.map((designation) => (
+                            <div
+                              key={designation}
+                              onClick={() => handleDesignationChange(designation)}
+                              className="px-4 py-2 hover:bg-blue-50 cursor-pointer text-sm"
+                            >
+                              {designation}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                     {errors.designation && <p className="text-red-500 text-xs mt-1">{errors.designation}</p>}
                   </div>
                 </div>
