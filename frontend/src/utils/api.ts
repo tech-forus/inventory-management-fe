@@ -10,16 +10,20 @@ const VITE_API_URL = (import.meta.env as any).VITE_API_URL;
 console.log('[API DEBUG] import.meta.env.VITE_API_URL:', VITE_API_URL);
 console.log('[API DEBUG] import.meta.env keys:', Object.keys(import.meta.env));
 
-const BACKEND_URL = VITE_API_URL || 
+// Hardcode Railway URL for local development
+const RAILWAY_BACKEND_URL = 'https://inventory-management-backend-production-5631.up.railway.app';
+
+const BACKEND_URL = VITE_API_URL || RAILWAY_BACKEND_URL || 
   (isLocalhost
     ? 'http://localhost:5000'  // Development: local backend
     : 'https://inventory-management-backend-production-5631.up.railway.app');  // Production: Railway backend
 
 // Use proxy only if:
 // 1. Running on localhost AND
-// 2. VITE_API_URL is NOT set (meaning we want to use local backend)
+// 2. VITE_API_URL is NOT set AND
+// 3. We're NOT using the hardcoded Railway URL (meaning we want to use local backend)
 // Otherwise, use direct backend URL
-const useProxy = isLocalhost && !VITE_API_URL;
+const useProxy = isLocalhost && !VITE_API_URL && BACKEND_URL === 'http://localhost:5000';
 const API_BASE_URL = useProxy
   ? '/api'  // Vite proxy will forward to local backend
   : `${BACKEND_URL}/api`;  // Direct URL to backend (Railway or local)
