@@ -137,10 +137,26 @@ const TransportorTab: React.FC<TransportorTabProps> = ({ transportors, loading, 
 
     try {
       setSaving(true);
+      // If "same as contact number" is checked, use contact number as WhatsApp number
+      const whatsappNumberValue = sameAsContactNumber && transportorForm.contactNumber
+        ? transportorForm.contactNumber.trim()
+        : (transportorForm.whatsappNumber && transportorForm.whatsappNumber.trim() 
+            ? transportorForm.whatsappNumber.trim() 
+            : null);
+      
+      // Prepare the payload, ensuring whatsappNumber is included
+      const payload = {
+        ...transportorForm,
+        whatsappNumber: whatsappNumberValue,
+        subVendor: transportorForm.subVendor && transportorForm.subVendor.trim() 
+          ? transportorForm.subVendor.trim() 
+          : null,
+      };
+      
       if (editingTransportor) {
-        await libraryService.updateTransportor(editingTransportor.id, transportorForm);
+        await libraryService.updateTransportor(editingTransportor.id, payload);
       } else {
-        await libraryService.createTransportor(transportorForm);
+        await libraryService.createTransportor(payload);
       }
       handleCloseDialog();
       onRefresh();
