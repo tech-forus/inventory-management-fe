@@ -60,6 +60,7 @@ const CategoryMasterTab: React.FC<CategoryMasterTabProps> = ({
 }) => {
   const navigate = useNavigate();
   const [search, setSearch] = useState('');
+  const [showCompleteOnly, setShowCompleteOnly] = useState(false);
   const [unifiedRows, setUnifiedRows] = useState<UnifiedCategoryRow[]>([]);
   const [showDialog, setShowDialog] = useState(false);
   const [editingRow, setEditingRow] = useState<UnifiedCategoryRow | null>(null);
@@ -162,12 +163,26 @@ const CategoryMasterTab: React.FC<CategoryMasterTabProps> = ({
   }, [showDialog, formType]);
 
   const filteredRows = unifiedRows.filter((row) => {
+    // Check if row is complete (all three levels have values, not '—')
+    const isComplete = 
+      row.productCategory && 
+      row.productCategory !== '—' && 
+      row.itemCategory && 
+      row.itemCategory !== '—' && 
+      row.subCategory && 
+      row.subCategory !== '—';
+
+    // If toggle is set to show complete only, filter out incomplete rows
+    if (showCompleteOnly && !isComplete) {
+      return false;
+    }
+
     const searchLower = search.toLowerCase();
 
-    // If no search term, show all rows (including incomplete hierarchies)
+    // If no search term, show rows based on toggle
     if (!searchLower) return true;
 
-    // Filter based on search term (search across all columns, including incomplete rows)
+    // Filter based on search term (search across all columns)
     return (
       (row.productCategory && row.productCategory !== '—' && row.productCategory.toLowerCase().includes(searchLower)) ||
       (row.itemCategory && row.itemCategory !== '—' && row.itemCategory.toLowerCase().includes(searchLower)) ||
@@ -654,6 +669,32 @@ const CategoryMasterTab: React.FC<CategoryMasterTabProps> = ({
             onChange={(e) => setSearch(e.target.value)}
             className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
           />
+        </div>
+        <div className="flex items-center gap-3">
+          {/* Toggle for Complete/All */}
+          <div className="flex items-center gap-2 bg-gray-50 px-3 py-2 rounded-lg border border-gray-200">
+            <span className={`text-xs font-medium ${!showCompleteOnly ? 'text-gray-900' : 'text-gray-500'}`}>
+              All
+            </span>
+            <button
+              type="button"
+              onClick={() => setShowCompleteOnly(!showCompleteOnly)}
+              className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 ${
+                showCompleteOnly ? 'bg-blue-600' : 'bg-gray-300'
+              }`}
+              role="switch"
+              aria-checked={showCompleteOnly}
+            >
+              <span
+                className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${
+                  showCompleteOnly ? 'translate-x-5' : 'translate-x-0.5'
+                }`}
+              />
+            </button>
+            <span className={`text-xs font-medium ${showCompleteOnly ? 'text-gray-900' : 'text-gray-500'}`}>
+              Complete Only
+            </span>
+          </div>
         </div>
         <div className="flex flex-wrap gap-2">
           <button
