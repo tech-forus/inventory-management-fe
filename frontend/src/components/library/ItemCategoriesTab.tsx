@@ -52,11 +52,69 @@ const ItemCategoriesTab: React.FC<ItemCategoriesTabProps> = ({
     description: '',
   });
 
+  // Update categoryForm when filterProductCategory changes (if not editing)
+  useEffect(() => {
+    if (!editingCategory && !showDialog && filterProductCategory) {
+      const filterId = parseInt(filterProductCategory);
+      if (filterId && filterId !== categoryForm.productCategoryId) {
+        setCategoryForm(prev => ({ ...prev, productCategoryId: filterId }));
+      }
+    }
+  }, [filterProductCategory, editingCategory, showDialog]);
+
   const [multipleCategories, setMultipleCategories] = useState<Array<{ name: string }>>([
     { name: '' }
   ]);
 
-  // Cache functions
+  // Cache functions - Load cached product categories and merge with API data
+  const loadCachedProductCategories = (): ProductCategory[] => {
+    try {
+      const cached = localStorage.getItem(PRODUCT_CACHE_KEY);
+      if (!cached) return [];
+      
+      const cacheData = JSON.parse(cached);
+      const cacheAge = Date.now() - (cacheData.timestamp || 0);
+      
+      if (cacheAge > CACHE_EXPIRY) {
+        localStorage.removeItem(PRODUCT_CACHE_KEY);
+        return [];
+      }
+      
+      const cachedProducts: ProductCategory[] = [];
+      
+      // Handle different cache structures
+      // Structure 1: categoryForm.name (from ProductCategoriesTab)
+      if (cacheData.categoryForm?.name) {
+        cachedProducts.push({
+          id: 0, // Temporary ID for cached items
+          name: cacheData.categoryForm.name,
+        });
+      }
+      
+      // Structure 2: productSelected array (from AddManageCategoriesPage)
+      if (cacheData.productSelected && Array.isArray(cacheData.productSelected)) {
+        cacheData.productSelected.forEach((item: any) => {
+          if (item.name && !item.isDeleted) {
+            // Check if not already added
+            const exists = cachedProducts.some(p => p.name.toLowerCase() === item.name.toLowerCase());
+            if (!exists) {
+              cachedProducts.push({
+                id: item.id || 0,
+                name: item.name,
+              });
+            }
+          }
+        });
+      }
+      
+      return cachedProducts;
+    } catch (error) {
+      console.error('Failed to load cached product categories:', error);
+      return [];
+    }
+  };
+
+  // Load product category ID from cache for form pre-filling
   const loadProductFromCache = (products: ProductCategory[]): number | null => {
     try {
       const cached = localStorage.getItem(PRODUCT_CACHE_KEY);
@@ -70,14 +128,28 @@ const ItemCategoriesTab: React.FC<ItemCategoriesTabProps> = ({
         return null;
       }
       
-      // Return product category ID if name exists (indicating it was filled)
+      // Try to find product category ID from different cache structures
+      // Structure 1: categoryForm.name (from ProductCategoriesTab)
       if (cacheData.categoryForm?.name) {
-        // Try to find matching product category by name
         const matchingProduct = products.find(
           p => p.name.toLowerCase() === cacheData.categoryForm.name.toLowerCase()
         );
-        return matchingProduct?.id || null;
+        if (matchingProduct) return matchingProduct.id;
       }
+      
+      // Structure 2: productSelected array (from AddManageCategoriesPage)
+      if (cacheData.productSelected && Array.isArray(cacheData.productSelected)) {
+        const firstValid = cacheData.productSelected.find((item: any) => item.id && !item.isDeleted);
+        if (firstValid?.id) {
+          return firstValid.id;
+        }
+      }
+      
+      // Structure 3: Direct productCategoryId in cache
+      if (cacheData.productCategoryId && typeof cacheData.productCategoryId === 'number') {
+        return cacheData.productCategoryId;
+      }
+      
       return null;
     } catch (error) {
       console.error('Failed to load product from cache:', error);
@@ -131,22 +203,77 @@ const ItemCategoriesTab: React.FC<ItemCategoriesTabProps> = ({
     localStorage.removeItem(PRODUCT_CACHE_KEY);
   };
 
+  // Load product categories from API and merge with cached categories
   useEffect(() => {
-    libraryService.getYourProductCategories().then((res) => {
-      const products = res.data || [];
-      setProductCategories(products);
-      
-      // After products are loaded, try to load cached product category
-      if (!editingCategory && !filterProductCategory) {
-        const cachedProductId = loadProductFromCache(products);
-        if (cachedProductId) {
-          setCategoryForm(prev => ({ ...prev, productCategoryId: cachedProductId }));
+    let isMounted = true;
+    
+    // Load cached product categories first (for immediate display)
+    const cachedProducts = loadCachedProductCategories();
+    
+    // Load product categories from API
+    libraryService.getYourProductCategories()
+      .then((res) => {
+        if (!isMounted) return;
+        
+        const products = res.data || [];
+        
+        // Merge API products with cached products (avoid duplicates)
+        // Cached products are only shown if they don't exist in API data
+        const mergedProducts = [...products];
+        cachedProducts.forEach(cached => {
+          // Only add cached product if it doesn't exist in API data
+          const exists = products.some((p: ProductCategory) => 
+            p.name.toLowerCase() === cached.name.toLowerCase()
+          );
+          if (!exists && cached.name) {
+            // For cached products, try to find by name in API data first
+            const foundInApi = products.find((p: ProductCategory) => 
+              p.name.toLowerCase() === cached.name.toLowerCase()
+            );
+            if (!foundInApi) {
+              // Only add if truly not in API (cached/unsaved product)
+              mergedProducts.push({
+                id: 0, // Mark as cached
+                name: cached.name,
+              });
+            }
+          }
+        });
+        
+        setProductCategories(mergedProducts);
+        
+        // After products are loaded, try to load cached product category ID
+        // Load cache even if filterProductCategory is set, but respect the filter
+        if (!editingCategory) {
+          const cachedProductId = loadProductFromCache(products); // Use API products for ID lookup
+          if (cachedProductId && cachedProductId > 0) {
+            // Only set cached product ID if no filter is active, or if it matches the filter
+            if (!filterProductCategory || cachedProductId.toString() === filterProductCategory) {
+              setCategoryForm(prev => ({ ...prev, productCategoryId: cachedProductId }));
+            }
+          } else if (filterProductCategory) {
+            // If filter is set but no cache, use filter
+            const filterId = parseInt(filterProductCategory);
+            if (filterId > 0) {
+              setCategoryForm(prev => ({ ...prev, productCategoryId: filterId }));
+            }
+          }
+          // Also load item category cache
+          loadFromCache();
         }
-        // Also load item category cache
-        loadFromCache();
-      }
-    });
-  }, []);
+      })
+      .catch((error) => {
+        console.error('Failed to load product categories:', error);
+        // If API fails, still use cached categories for display
+        if (cachedProducts.length > 0 && isMounted) {
+          setProductCategories(cachedProducts);
+        }
+      });
+    
+    return () => {
+      isMounted = false;
+    };
+  }, [filterProductCategory, editingCategory]);
 
   // Save to cache when form changes (only for new categories)
   useEffect(() => {
@@ -162,12 +289,28 @@ const ItemCategoriesTab: React.FC<ItemCategoriesTabProps> = ({
       setMultipleCategories([{ name: '' }]);
     } else {
       setEditingCategory(null);
+      
+      // Try to load from cache first, then fall back to filter
+      let initialProductCategoryId = 0;
+      if (filterProductCategory) {
+        initialProductCategoryId = parseInt(filterProductCategory);
+      } else {
+        // Try to get cached product category ID
+        const cachedProductId = loadProductFromCache(productCategories);
+        if (cachedProductId) {
+          initialProductCategoryId = cachedProductId;
+        }
+      }
+      
       setCategoryForm({
         name: '',
-        productCategoryId: filterProductCategory ? parseInt(filterProductCategory) : 0,
+        productCategoryId: initialProductCategoryId,
         description: '',
       });
       setMultipleCategories([{ name: '' }]);
+      
+      // Load item category cache if available
+      loadFromCache();
     }
     setShowDialog(true);
     setErrors({});
@@ -175,9 +318,19 @@ const ItemCategoriesTab: React.FC<ItemCategoriesTabProps> = ({
 
   const handleSave = async () => {
     const newErrors: Record<string, string> = {};
-    if (!categoryForm.productCategoryId || categoryForm.productCategoryId === 0) {
+    
+    // Validate product category ID (must be a valid ID from API, not cached)
+    const productCategoryId = categoryForm.productCategoryId || 0;
+    if (!productCategoryId || productCategoryId === 0) {
       newErrors.productCategoryId = 'Product Category is required';
+    } else {
+      // Ensure the product category exists in API data (not just cached)
+      const validProduct = productCategories.find(p => p.id === productCategoryId && p.id > 0);
+      if (!validProduct) {
+        newErrors.productCategoryId = 'Please select a valid Product Category from the list';
+      }
     }
+    
     if (!validateRequired(categoryForm.name || '')) {
       newErrors.name = 'Item Category Name is required';
     }
@@ -189,10 +342,15 @@ const ItemCategoriesTab: React.FC<ItemCategoriesTabProps> = ({
 
     try {
       setSaving(true);
+      const saveData = {
+        ...categoryForm,
+        productCategoryId: productCategoryId, // Use validated ID
+      };
+      
       if (editingCategory) {
-        await libraryService.updateYourItemCategory(editingCategory.id, categoryForm);
+        await libraryService.updateYourItemCategory(editingCategory.id, saveData);
       } else {
-        await libraryService.createYourItemCategory(categoryForm);
+        await libraryService.createYourItemCategory(saveData);
       }
       setShowDialog(false);
       if (!editingCategory) {
@@ -208,10 +366,21 @@ const ItemCategoriesTab: React.FC<ItemCategoriesTabProps> = ({
 
   const handleSaveMultiple = async () => {
     const newErrors: Record<string, string> = {};
-    if (!categoryForm.productCategoryId || categoryForm.productCategoryId === 0) {
+    
+    // Validate product category ID (must be a valid ID from API, not cached)
+    const productCategoryId = categoryForm.productCategoryId || 0;
+    if (!productCategoryId || productCategoryId === 0) {
       newErrors.productCategoryId = 'Product Category is required';
       setErrors(newErrors);
       return;
+    } else {
+      // Ensure the product category exists in API data (not just cached)
+      const validProduct = productCategories.find(p => p.id === productCategoryId && p.id > 0);
+      if (!validProduct) {
+        newErrors.productCategoryId = 'Please select a valid Product Category from the list';
+        setErrors(newErrors);
+        return;
+      }
     }
 
     const validItems = multipleCategories.filter(item => item.name.trim() !== '');
@@ -224,7 +393,7 @@ const ItemCategoriesTab: React.FC<ItemCategoriesTabProps> = ({
       setSaving(true);
       const promises = validItems.map(item =>
         libraryService.createYourItemCategory({
-          productCategoryId: categoryForm.productCategoryId,
+          productCategoryId: productCategoryId, // Use validated ID
           name: item.name.trim(),
           description: '',
         })
@@ -428,8 +597,8 @@ const ItemCategoriesTab: React.FC<ItemCategoriesTabProps> = ({
           >
             <option value="">All Product Categories</option>
             {productCategories.map((cat) => (
-              <option key={cat.id} value={cat.id}>
-                {cat.name}
+              <option key={cat.id || `cached-${cat.name}`} value={cat.id || ''}>
+                {cat.name} {cat.id === 0 ? '(Cached)' : ''}
               </option>
             ))}
           </select>
@@ -545,11 +714,15 @@ const ItemCategoriesTab: React.FC<ItemCategoriesTabProps> = ({
                     }`}
                   >
                     <option value="0">Select Product Category</option>
-                    {productCategories.map((cat) => (
-                      <option key={cat.id} value={cat.id}>
-                        {cat.name}
-                      </option>
-                    ))}
+                    {productCategories.length === 0 ? (
+                      <option disabled>Loading product categories...</option>
+                    ) : (
+                      productCategories.map((cat) => (
+                        <option key={cat.id || `cached-${cat.name}`} value={cat.id || 0}>
+                          {cat.name} {cat.id === 0 ? '(Cached)' : ''}
+                        </option>
+                      ))
+                    )}
                   </select>
                   {errors.productCategoryId && <p className="text-red-500 text-xs mt-1">{errors.productCategoryId}</p>}
                 </div>
