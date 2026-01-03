@@ -69,7 +69,7 @@ const AppLayout = ({ children, hideDefaultHeader }: { children: React.ReactNode;
                   <Menu className="w-5 h-5 text-gray-700" />
                 </button>
                 {isLibraryPage && (
-                  <h1 className="text-xl font-semibold text-gray-900">Library</h1>
+                  <h1 className="text-2xl font-semibold text-gray-900">Library</h1>
                 )}
               </div>
               
