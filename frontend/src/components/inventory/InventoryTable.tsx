@@ -31,94 +31,93 @@ const InventoryTable: React.FC<InventoryTableProps> = ({
         <table className="w-full text-center mx-auto">
           <thead>
             <tr className="bg-slate-50/70 border-b border-slate-100">
-              <th className="px-[30px] py-[21px] text-[10.8px] font-semibold leading-[1.4] tracking-[0.1em] uppercase text-slate-400 text-center w-[30px]"></th>
-              <th className="px-[30px] py-[21px] text-[10.8px] font-semibold leading-[1.4] tracking-[0.1em] uppercase text-slate-400 text-center">
+              <th className="px-3 py-[21px] text-[10.8px] font-semibold leading-[1.4] tracking-[0.1em] uppercase text-slate-400 text-center">
                 SKU ID
               </th>
               <th 
-                className={`px-[30px] py-[21px] text-[10.8px] font-semibold leading-[1.4] tracking-[0.1em] uppercase text-slate-400 text-center ${
+                className={`px-3 py-[21px] text-[10.8px] font-semibold leading-[1.4] tracking-[0.1em] uppercase text-slate-400 text-center ${
                   onSort ? 'cursor-pointer hover:bg-slate-100 select-none' : ''
                 }`}
                 onClick={() => onSort && onSort('productCategory')}
               >
-                <div className="flex items-center justify-center gap-2">
+                <div className="flex items-center justify-center gap-1">
                   Product Category
                   {SortIcon && <SortIcon field="productCategory" />}
                 </div>
               </th>
               <th 
-                className={`px-[30px] py-[21px] text-[10.8px] font-semibold leading-[1.4] tracking-[0.1em] uppercase text-slate-400 text-center ${
+                className={`px-3 py-[21px] text-[10.8px] font-semibold leading-[1.4] tracking-[0.1em] uppercase text-slate-400 text-center ${
                   onSort ? 'cursor-pointer hover:bg-slate-100 select-none' : ''
                 }`}
                 onClick={() => onSort && onSort('itemCategory')}
               >
-                <div className="flex items-center justify-center gap-2">
+                <div className="flex items-center justify-center gap-1">
                   Item Category
                   {SortIcon && <SortIcon field="itemCategory" />}
                 </div>
               </th>
               <th 
-                className={`px-[30px] py-[21px] text-[10.8px] font-semibold leading-[1.4] tracking-[0.1em] uppercase text-slate-400 text-center ${
+                className={`px-3 py-[21px] text-[10.8px] font-semibold leading-[1.4] tracking-[0.1em] uppercase text-slate-400 text-center ${
                   onSort ? 'cursor-pointer hover:bg-slate-100 select-none' : ''
                 }`}
                 onClick={() => onSort && onSort('subCategory')}
               >
-                <div className="flex items-center justify-center gap-2">
+                <div className="flex items-center justify-center gap-1">
                   Sub Category
                   {SortIcon && <SortIcon field="subCategory" />}
                 </div>
               </th>
               <th 
-                className={`px-[30px] py-[21px] text-[10.8px] font-semibold leading-[1.4] tracking-[0.1em] uppercase text-slate-400 text-center ${
+                className={`px-3 py-[21px] text-[10.8px] font-semibold leading-[1.4] tracking-[0.1em] uppercase text-slate-400 text-center ${
                   onSort ? 'cursor-pointer hover:bg-slate-100 select-none' : ''
                 }`}
                 onClick={() => onSort && onSort('itemName')}
               >
-                <div className="flex items-center justify-center gap-2">
+                <div className="flex items-center justify-center gap-1">
                   Item Name
                   {SortIcon && <SortIcon field="itemName" />}
                 </div>
               </th>
               <th 
-                className={`px-[30px] py-[21px] text-[10.8px] font-semibold leading-[1.4] tracking-[0.1em] uppercase text-slate-400 text-center ${
+                className={`px-3 py-[21px] text-[10.8px] font-semibold leading-[1.4] tracking-[0.1em] uppercase text-slate-400 text-center ${
                   onSort ? 'cursor-pointer hover:bg-slate-100 select-none' : ''
                 }`}
                 onClick={() => onSort && onSort('brand')}
               >
-                <div className="flex items-center justify-center gap-2">
+                <div className="flex items-center justify-center gap-1">
                   Brand
                   {SortIcon && <SortIcon field="brand" />}
                 </div>
               </th>
               <th 
-                className={`px-[30px] py-[21px] text-[10.8px] font-semibold leading-[1.4] tracking-[0.1em] uppercase text-slate-400 text-center ${
+                className={`px-3 py-[21px] text-[10.8px] font-semibold leading-[1.4] tracking-[0.1em] uppercase text-slate-400 text-center ${
                   onSort ? 'cursor-pointer hover:bg-slate-100 select-none' : ''
                 }`}
                 onClick={() => onSort && onSort('vendor')}
               >
-                <div className="flex items-center justify-center gap-2">
+                <div className="flex items-center justify-center gap-1">
                   Vendor
                   {SortIcon && <SortIcon field="vendor" />}
                 </div>
               </th>
-              <th className="px-[30px] py-[21px] text-[10.8px] font-semibold leading-[1.4] tracking-[0.1em] uppercase text-slate-400 text-center">
+              <th className="px-3 py-[21px] text-[10.8px] font-semibold leading-[1.4] tracking-[0.1em] uppercase text-slate-400 text-center">
                 Model Number
               </th>
-              <th className="px-[30px] py-[21px] text-[10.8px] font-semibold leading-[1.4] tracking-[0.1em] uppercase text-slate-400 text-center">
+              <th className="px-3 py-[21px] text-[10.8px] font-semibold leading-[1.4] tracking-[0.1em] uppercase text-slate-400 text-center">
                 HSN Code
               </th>
               <th 
-                className={`px-[30px] py-[21px] text-[10.8px] font-semibold leading-[1.4] tracking-[0.1em] uppercase text-slate-400 text-center ${
+                className={`px-3 py-[21px] text-[10.8px] font-semibold leading-[1.4] tracking-[0.1em] uppercase text-slate-400 text-center ${
                   onSort ? 'cursor-pointer hover:bg-slate-100 select-none' : ''
                 }`}
                 onClick={() => onSort && onSort('currentStock')}
               >
-                <div className="flex items-center justify-center gap-2">
+                <div className="flex items-center justify-center gap-1">
                   Current Stock
                   {SortIcon && <SortIcon field="currentStock" />}
                 </div>
               </th>
-              <th className="px-[30px] py-[21px] text-[10.8px] font-semibold leading-[1.4] tracking-[0.1em] uppercase text-slate-400 text-center">
+              <th className="px-3 py-[21px] text-[10.8px] font-semibold leading-[1.4] tracking-[0.1em] uppercase text-slate-400 text-center">
                 Actions
               </th>
             </tr>
@@ -126,7 +125,7 @@ const InventoryTable: React.FC<InventoryTableProps> = ({
           <tbody className="divide-y divide-slate-100">
             {loading ? (
               <tr>
-                <td colSpan={12} className="px-10 py-12 text-center">
+                <td colSpan={11} className="px-10 py-12 text-center">
                   <div className="flex justify-center">
                     <div className="w-8 h-8 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
                   </div>
@@ -134,7 +133,7 @@ const InventoryTable: React.FC<InventoryTableProps> = ({
               </tr>
             ) : inventory.length === 0 ? (
               <tr>
-                <td colSpan={12} className="px-10 py-12 text-center text-slate-500 font-medium">
+                <td colSpan={11} className="px-10 py-12 text-center text-slate-500 font-medium">
                   No inventory items found
                 </td>
               </tr>
