@@ -36,9 +36,34 @@ export async function cachedGet<T = any>(
   const cached = cacheGet<T>(key);
   if (cached !== null) return cached;
 
-  const response = await api.get(url, config);
-  cacheSet(key, response.data as T, ttlMs);
-  return response.data as T;
+  try {
+    // Check for authentication token before making request
+    const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+    if (!token) {
+      console.warn(`[cachedApi] No authentication token found for ${url}, skipping request`);
+      throw new Error('Authentication required');
+    }
+
+    const response = await api.get(url, config);
+    
+    // Only cache successful responses (status 200-299)
+    if (response.status >= 200 && response.status < 300) {
+      cacheSet(key, response.data as T, ttlMs);
+    }
+    
+    return response.data as T;
+  } catch (error: any) {
+    // Don't cache error responses, especially 401 (unauthorized)
+    if (error.response?.status === 401) {
+      // Clear any cached data for this key on auth failure
+      cacheRemove(key);
+      // Let the api interceptor handle the redirect
+      throw error;
+    }
+    
+    // For other errors, rethrow - let the component handle it
+    throw error;
+  }
 }
 
 export function invalidateCacheKey(key: string): void {

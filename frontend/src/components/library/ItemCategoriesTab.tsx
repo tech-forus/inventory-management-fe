@@ -207,6 +207,18 @@ const ItemCategoriesTab: React.FC<ItemCategoriesTabProps> = ({
   useEffect(() => {
     let isMounted = true;
     
+    // Check if user is authenticated before making API calls
+    const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+    if (!token) {
+      console.warn('No authentication token found, skipping API call');
+      // Still show cached categories if available
+      const cachedProducts = loadCachedProductCategories();
+      if (cachedProducts.length > 0 && isMounted) {
+        setProductCategories(cachedProducts);
+      }
+      return;
+    }
+    
     // Load cached product categories first (for immediate display)
     const cachedProducts = loadCachedProductCategories();
     
@@ -262,9 +274,16 @@ const ItemCategoriesTab: React.FC<ItemCategoriesTabProps> = ({
           loadFromCache();
         }
       })
-      .catch((error) => {
+      .catch((error: any) => {
+        // Handle 401 errors gracefully - don't log as error since api interceptor handles redirect
+        if (error.response?.status === 401) {
+          // Token expired or invalid - api interceptor will redirect to login
+          console.warn('Authentication failed, redirecting to login...');
+          return;
+        }
+        
         console.error('Failed to load product categories:', error);
-        // If API fails, still use cached categories for display
+        // If API fails (non-auth errors), still use cached categories for display
         if (cachedProducts.length > 0 && isMounted) {
           setProductCategories(cachedProducts);
         }
