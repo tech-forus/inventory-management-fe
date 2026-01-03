@@ -446,7 +446,73 @@ const SubCategoriesTab: React.FC<SubCategoriesTabProps> = ({
     }
   };
 
-  const filteredCategories = subCategories.filter((c) =>
+  // Load cached categories and merge with database categories
+  const [cachedCategories, setCachedCategories] = useState<SubCategory[]>([]);
+  
+  useEffect(() => {
+    try {
+      const cached = localStorage.getItem(SUB_CACHE_KEY);
+      if (cached) {
+        const cacheData = JSON.parse(cached);
+        const cacheAge = Date.now() - (cacheData.timestamp || 0);
+        const maxAge = 24 * 60 * 60 * 1000; // 24 hours
+        
+        if (cacheAge <= maxAge) {
+          const cachedSubs: SubCategory[] = [];
+          
+          // Handle single sub category
+          if (cacheData.categoryForm?.name && cacheData.categoryForm?.itemCategoryId) {
+            const itemName = itemCategories.find(i => i.id === cacheData.categoryForm.itemCategoryId)?.name || 'Unknown';
+            cachedSubs.push({
+              id: 0, // 0 indicates unsaved
+              name: cacheData.categoryForm.name,
+              itemCategoryId: cacheData.categoryForm.itemCategoryId,
+              itemCategoryName: itemName,
+              description: cacheData.categoryForm.description || '',
+              createdAt: undefined,
+            });
+          }
+          
+          // Handle multiple sub categories
+          if (cacheData.multipleCategories && Array.isArray(cacheData.multipleCategories)) {
+            cacheData.multipleCategories.forEach((sub: any) => {
+              if (sub.name?.trim() && cacheData.categoryForm?.itemCategoryId) {
+                const itemName = itemCategories.find(i => i.id === cacheData.categoryForm.itemCategoryId)?.name || 'Unknown';
+                cachedSubs.push({
+                  id: 0,
+                  name: sub.name.trim(),
+                  itemCategoryId: cacheData.categoryForm.itemCategoryId,
+                  itemCategoryName: itemName,
+                  description: '',
+                  createdAt: undefined,
+                });
+              }
+            });
+          }
+          
+          setCachedCategories(cachedSubs);
+        } else {
+          setCachedCategories([]);
+        }
+      } else {
+        setCachedCategories([]);
+      }
+    } catch (error) {
+      console.error('Failed to load cached categories:', error);
+      setCachedCategories([]);
+    }
+  }, [subCategories, itemCategories, showDialog]);
+
+  // Merge database categories with cached categories (cached items first, then database items)
+  const allCategories = [
+    ...cachedCategories.filter(cached => !subCategories.some(db => 
+      db.name.toLowerCase() === cached.name.toLowerCase() && 
+      db.itemCategoryId === cached.itemCategoryId
+    )),
+    ...subCategories
+  ];
+
+  const filteredCategories = allCategories.filter((c) =>
     c.name.toLowerCase().includes(search.toLowerCase()) ||
     c.itemCategoryName?.toLowerCase().includes(search.toLowerCase())
   );
@@ -575,33 +641,55 @@ const SubCategoriesTab: React.FC<SubCategoriesTabProps> = ({
                       <td colSpan={4} className="px-4 py-8 text-center text-gray-500">No sub categories found</td>
                     </tr>
                   ) : (
-                    filteredCategories.map((category) => (
-                      <tr key={category.id} className="hover:bg-gray-50">
-                        <td className="px-4 py-3 text-sm font-medium text-gray-900">{category.name}</td>
-                        <td className="px-4 py-3 text-sm text-gray-700">{category.itemCategoryName || '-'}</td>
-                        <td className="px-4 py-3 text-sm text-gray-700">
-                          {category.createdAt ? formatDate(category.createdAt) : '-'}
-                        </td>
-                        <td className="px-4 py-3 text-sm">
-                          <div className="flex items-center gap-2">
-                            <button
-                              onClick={() => handleOpenDialog(category)}
-                              className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg"
-                              title="Edit"
-                            >
-                              <Edit className="w-4 h-4" />
-                            </button>
-                            <button
-                              onClick={() => handleDelete(category.id)}
-                              className="p-2 text-red-600 hover:bg-red-50 rounded-lg"
-                              title="Delete"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))
+                    filteredCategories.map((category) => {
+                      const isCached = category.id === 0;
+                      return (
+                        <tr key={category.id || `cached-${category.name}-${category.itemCategoryId}`} className={`hover:bg-gray-50 ${isCached ? 'bg-yellow-50' : ''}`}>
+                          <td className="px-4 py-3 text-sm font-medium text-gray-900">
+                            {category.name}
+                            {isCached && (
+                              <span className="ml-2 px-2 py-0.5 text-xs font-semibold text-yellow-700 bg-yellow-200 rounded">
+                                Unsaved
+                              </span>
+                            )}
+                          </td>
+                          <td className="px-4 py-3 text-sm text-gray-700">{category.itemCategoryName || '-'}</td>
+                          <td className="px-4 py-3 text-sm text-gray-700">
+                            {category.createdAt ? formatDate(category.createdAt) : '-'}
+                          </td>
+                          <td className="px-4 py-3 text-sm">
+                            {isCached ? (
+                              <div className="flex items-center gap-2">
+                                <button
+                                  onClick={() => handleOpenDialog()}
+                                  className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg"
+                                  title="Edit"
+                                >
+                                  <Edit className="w-4 h-4" />
+                                </button>
+                              </div>
+                            ) : (
+                              <div className="flex items-center gap-2">
+                                <button
+                                  onClick={() => handleOpenDialog(category)}
+                                  className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg"
+                                  title="Edit"
+                                >
+                                  <Edit className="w-4 h-4" />
+                                </button>
+                                <button
+                                  onClick={() => handleDelete(category.id)}
+                                  className="p-2 text-red-600 hover:bg-red-50 rounded-lg"
+                                  title="Delete"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
+                              </div>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })
                   )}
                 </tbody>
               </table>

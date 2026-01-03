@@ -305,7 +305,75 @@ const ItemCategoriesTab: React.FC<ItemCategoriesTabProps> = ({
     }
   };
 
-  const filteredCategories = itemCategories.filter((c) =>
+  // Load cached categories and merge with database categories
+  const [cachedCategories, setCachedCategories] = useState<ItemCategory[]>([]);
+  
+  useEffect(() => {
+    try {
+      const cached = localStorage.getItem(ITEM_CACHE_KEY);
+      if (cached) {
+        const cacheData = JSON.parse(cached);
+        const cacheAge = Date.now() - (cacheData.timestamp || 0);
+        const maxAge = 24 * 60 * 60 * 1000; // 24 hours
+        
+        if (cacheAge <= maxAge) {
+          const cachedItems: ItemCategory[] = [];
+          
+          // Handle single item category
+          if (cacheData.categoryForm?.name && cacheData.categoryForm?.productCategoryId) {
+            const productName = productCategories.find(p => p.id === cacheData.categoryForm.productCategoryId)?.name || 'Unknown';
+            cachedItems.push({
+              id: 0, // 0 indicates unsaved
+              name: cacheData.categoryForm.name,
+              productCategoryId: cacheData.categoryForm.productCategoryId,
+              productCategoryName: productName,
+              description: cacheData.categoryForm.description || '',
+              subCategoryCount: 0,
+              createdAt: undefined,
+            });
+          }
+          
+          // Handle multiple item categories
+          if (cacheData.multipleCategories && Array.isArray(cacheData.multipleCategories)) {
+            cacheData.multipleCategories.forEach((item: any) => {
+              if (item.name?.trim() && cacheData.categoryForm?.productCategoryId) {
+                const productName = productCategories.find(p => p.id === cacheData.categoryForm.productCategoryId)?.name || 'Unknown';
+                cachedItems.push({
+                  id: 0,
+                  name: item.name.trim(),
+                  productCategoryId: cacheData.categoryForm.productCategoryId,
+                  productCategoryName: productName,
+                  description: '',
+                  subCategoryCount: 0,
+                  createdAt: undefined,
+                });
+              }
+            });
+          }
+          
+          setCachedCategories(cachedItems);
+        } else {
+          setCachedCategories([]);
+        }
+      } else {
+        setCachedCategories([]);
+      }
+    } catch (error) {
+      console.error('Failed to load cached categories:', error);
+      setCachedCategories([]);
+    }
+  }, [itemCategories, productCategories, showDialog]);
+
+  // Merge database categories with cached categories (cached items first, then database items)
+  const allCategories = [
+    ...cachedCategories.filter(cached => !itemCategories.some(db => 
+      db.name.toLowerCase() === cached.name.toLowerCase() && 
+      db.productCategoryId === cached.productCategoryId
+    )),
+    ...itemCategories
+  ];
+
+  const filteredCategories = allCategories.filter((c) =>
     c.name.toLowerCase().includes(search.toLowerCase()) ||
     c.productCategoryName?.toLowerCase().includes(search.toLowerCase())
   );
@@ -390,34 +458,56 @@ const ItemCategoriesTab: React.FC<ItemCategoriesTabProps> = ({
                       <td colSpan={5} className="px-4 py-8 text-center text-gray-500">No item categories found</td>
                     </tr>
                   ) : (
-                    filteredCategories.map((category) => (
-                      <tr key={category.id} className="hover:bg-gray-50">
-                        <td className="px-4 py-3 text-sm font-medium text-gray-900">{category.name}</td>
-                        <td className="px-4 py-3 text-sm text-gray-700">{category.productCategoryName || '-'}</td>
-                        <td className="px-4 py-3 text-sm text-gray-700">{category.subCategoryCount || 0}</td>
-                        <td className="px-4 py-3 text-sm text-gray-700">
-                          {category.createdAt ? formatDate(category.createdAt) : '-'}
-                        </td>
-                        <td className="px-4 py-3 text-sm">
-                          <div className="flex items-center gap-2">
-                            <button
-                              onClick={() => handleOpenDialog(category)}
-                              className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg"
-                              title="Edit"
-                            >
-                              <Edit className="w-4 h-4" />
-                            </button>
-                            <button
-                              onClick={() => handleDelete(category.id)}
-                              className="p-2 text-red-600 hover:bg-red-50 rounded-lg"
-                              title="Delete"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))
+                    filteredCategories.map((category) => {
+                      const isCached = category.id === 0;
+                      return (
+                        <tr key={category.id || `cached-${category.name}-${category.productCategoryId}`} className={`hover:bg-gray-50 ${isCached ? 'bg-yellow-50' : ''}`}>
+                          <td className="px-4 py-3 text-sm font-medium text-gray-900">
+                            {category.name}
+                            {isCached && (
+                              <span className="ml-2 px-2 py-0.5 text-xs font-semibold text-yellow-700 bg-yellow-200 rounded">
+                                Unsaved
+                              </span>
+                            )}
+                          </td>
+                          <td className="px-4 py-3 text-sm text-gray-700">{category.productCategoryName || '-'}</td>
+                          <td className="px-4 py-3 text-sm text-gray-700">{category.subCategoryCount || 0}</td>
+                          <td className="px-4 py-3 text-sm text-gray-700">
+                            {category.createdAt ? formatDate(category.createdAt) : '-'}
+                          </td>
+                          <td className="px-4 py-3 text-sm">
+                            {isCached ? (
+                              <div className="flex items-center gap-2">
+                                <button
+                                  onClick={() => handleOpenDialog()}
+                                  className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg"
+                                  title="Edit"
+                                >
+                                  <Edit className="w-4 h-4" />
+                                </button>
+                              </div>
+                            ) : (
+                              <div className="flex items-center gap-2">
+                                <button
+                                  onClick={() => handleOpenDialog(category)}
+                                  className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg"
+                                  title="Edit"
+                                >
+                                  <Edit className="w-4 h-4" />
+                                </button>
+                                <button
+                                  onClick={() => handleDelete(category.id)}
+                                  className="p-2 text-red-600 hover:bg-red-50 rounded-lg"
+                                  title="Delete"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
+                              </div>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })
                   )}
                 </tbody>
               </table>
