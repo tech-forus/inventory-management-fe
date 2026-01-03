@@ -1448,13 +1448,13 @@ export default function AddManageCategoriesPage() {
                         <div className="text-sm font-medium text-gray-700">Product Category: {productTag.name}</div>
                       </div>
 
-                        <div className="mb-4">
-                          <div className="text-sm font-semibold text-gray-900 mb-2">Add Item Category <span className="text-red-500">*</span></div>
-                          <div className="relative autocomplete-container">
-                            <div className={`border rounded-lg px-3 py-2 ${
-                              validationErrors.itemCategories[productId] ? 'border-red-500' : 'border-gray-300'
-                            }`}>
-                            <div className="flex flex-wrap gap-2">
+                      <div className="mb-4">
+                        <div className="text-sm font-semibold text-gray-900 mb-2">Add Item Category <span className="text-red-500">*</span></div>
+                        <div className="relative autocomplete-container">
+                          <div className={`border rounded-lg px-3 py-2 ${
+                            validationErrors.itemCategories[productId] ? 'border-red-500' : 'border-gray-300'
+                          }`}>
+                          <div className="flex flex-wrap gap-2">
                               {itemSelected
                                 .filter((t) => !t.isDeleted)
                                 .map((t, idx) => (
@@ -1504,12 +1504,12 @@ export default function AddManageCategoriesPage() {
                                 placeholder="Item category name (Press Enter to add)"
                                 className="flex-1 min-w-[220px] outline-none"
                               />
-                            </div>
                           </div>
+                        </div>
                           
-                          {/* Autocomplete suggestions */}
-                          {showItemSuggestions[productId] && itemDraft.length > 0 && (
-                            <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                        {/* Autocomplete suggestions */}
+                        {showItemSuggestions[productId] && itemDraft.length > 0 && (
+                          <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-48 overflow-y-auto">
                               {itemsForProduct
                                 .filter((i) => {
                                   const searchTerm = itemDraft.toLowerCase();
@@ -1537,13 +1537,12 @@ export default function AddManageCategoriesPage() {
                               }).length === 0 && (
                                 <div className="px-3 py-2 text-sm text-gray-500">No matching categories found</div>
                               )}
-                            </div>
-                          )}
-                        </div>
-                        {validationErrors.itemCategories[productId] && (
-                          <p className="text-red-500 text-xs mt-1">{validationErrors.itemCategories[productId]}</p>
+                          </div>
                         )}
                       </div>
+                      {validationErrors.itemCategories[productId] && (
+                        <p className="text-red-500 text-xs mt-1">{validationErrors.itemCategories[productId]}</p>
+                      )}
 
                       <div className="flex items-center gap-2">
                         <button
@@ -1553,7 +1552,6 @@ export default function AddManageCategoriesPage() {
                         >
                           {itemEditMode ? 'Cancel' : 'Edit'}
                         </button>
-                      </div>
                       </div>
                     </div>
                   );
