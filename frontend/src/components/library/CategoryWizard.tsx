@@ -349,6 +349,8 @@ const CategoryWizard: React.FC<CategoryWizardProps> = ({
                         productCategories={wizardState.productCategories}
                         onChange={handleProductCategoriesChange}
                         existingProductCategories={existingProductCategories}
+                        isEditing={!!editingRow}
+                        editingRow={editingRow}
                       />
                     )}
                     {currentStep === 2 && (
@@ -357,6 +359,8 @@ const CategoryWizard: React.FC<CategoryWizardProps> = ({
                         itemCategories={wizardState.itemCategories}
                         onChange={handleItemCategoriesChange}
                         existingItemCategories={existingItemCategories}
+                        isEditing={!!editingRow}
+                        editingRow={editingRow}
                       />
                     )}
                     {currentStep === 3 && (
@@ -367,6 +371,8 @@ const CategoryWizard: React.FC<CategoryWizardProps> = ({
                         onChange={handleSubCategoriesChange}
                         existingSubCategories={existingSubCategories}
                         existingItemCategories={existingItemCategories}
+                        isEditing={!!editingRow}
+                        editingRow={editingRow}
                       />
                     )}
                   </>
