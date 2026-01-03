@@ -1543,6 +1543,7 @@ export default function AddManageCategoriesPage() {
                       {validationErrors.itemCategories[productId] && (
                         <p className="text-red-500 text-xs mt-1">{validationErrors.itemCategories[productId]}</p>
                       )}
+                      </div>
 
                       <div className="flex items-center gap-2">
                         <button
