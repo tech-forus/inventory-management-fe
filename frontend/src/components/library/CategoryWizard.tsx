@@ -220,16 +220,64 @@ const CategoryWizard: React.FC<CategoryWizardProps> = ({
     try {
       setSaving(true);
 
+      // Validate that we have at least one non-empty category name
+      const hasProductCategory = wizardState.productCategories.some(cat => cat && cat.trim());
+      if (!hasProductCategory) {
+        alert('Please enter a product category name');
+        setSaving(false);
+        return;
+      }
+      
+      // Validate item categories if we're on step 2 or 3
+      if (currentStep >= 2) {
+        const totalItems = Object.values(wizardState.itemCategories).flat().filter(cat => cat && cat.trim()).length;
+        if (totalItems === 0) {
+          alert('Please enter an item category name');
+          setSaving(false);
+          return;
+        }
+      }
+      
+      // Validate sub categories if we're on step 3
+      if (currentStep === 3) {
+        const totalSubs = Object.values(wizardState.subCategories).flat().filter(cat => cat && cat.trim()).length;
+        if (totalSubs === 0) {
+          alert('Please enter a sub category name');
+          setSaving(false);
+          return;
+        }
+      }
+
       // Step 1: Create/Update Product Categories
       const productCategoryMap: { [name: string]: number } = {};
       for (const productCategoryName of wizardState.productCategories) {
-        const id = await findOrCreateCategory(
-          productCategoryName,
-          existingProductCategories,
-          (data) => libraryService.createYourProductCategory(data),
-          editingRow?.productCategoryId ? (id, data) => libraryService.updateYourProductCategory(id, data) : undefined
-        );
-        productCategoryMap[productCategoryName] = id;
+        if (!productCategoryName.trim()) continue; // Skip empty names
+        
+        let productCategoryId: number;
+        
+        // If editing, always update the existing category
+        if (editingRow?.productCategoryId) {
+          await libraryService.updateYourProductCategory(editingRow.productCategoryId, {
+            name: productCategoryName.trim(),
+          });
+          productCategoryId = editingRow.productCategoryId;
+        } else {
+          // Check if category with same name already exists
+          const existing = existingProductCategories.find(
+            c => c.name.toLowerCase() === productCategoryName.trim().toLowerCase()
+          );
+          
+          if (existing) {
+            productCategoryId = existing.id;
+          } else {
+            // Create new category
+            const result = await libraryService.createYourProductCategory({
+              name: productCategoryName.trim(),
+            });
+            productCategoryId = result.data?.id || result.id || (result as any).id;
+          }
+        }
+        productCategoryMap[productCategoryName] = productCategoryId;
       }
 
       // Step 2: Create/Update Item Categories
@@ -239,27 +287,34 @@ const CategoryWizard: React.FC<CategoryWizardProps> = ({
         if (!productCategoryId) continue;
 
         for (const itemCategoryName of itemCategoryNames) {
-          const existingItem = existingItemCategories.find(
-            ic => ic.name.toLowerCase() === itemCategoryName.toLowerCase() &&
-            ic.productCategoryId === productCategoryId
-          );
-
+          if (!itemCategoryName.trim()) continue; // Skip empty names
+          
           let itemCategoryId: number;
-          if (existingItem) {
-            if (editingRow?.itemCategoryId === existingItem.id) {
-              await libraryService.updateYourItemCategory(existingItem.id, {
-                name: itemCategoryName,
-                productCategoryId,
-              });
-            }
-            itemCategoryId = existingItem.id;
-          } else {
-            const result = await libraryService.createYourItemCategory({
-              name: itemCategoryName,
+          
+          // If editing, always update the existing category
+          if (editingRow?.itemCategoryId) {
+            await libraryService.updateYourItemCategory(editingRow.itemCategoryId, {
+              name: itemCategoryName.trim(),
               productCategoryId,
             });
-            // API returns { success: true, data: { id, name, ... } }
-            itemCategoryId = result.data?.id || result.id || (result as any).id;
+            itemCategoryId = editingRow.itemCategoryId;
+          } else {
+            // Check if category with same name already exists for this product category
+            const existingItem = existingItemCategories.find(
+              ic => ic.name.toLowerCase() === itemCategoryName.trim().toLowerCase() &&
+              ic.productCategoryId === productCategoryId
+            );
+
+            if (existingItem) {
+              itemCategoryId = existingItem.id;
+            } else {
+              // Create new category
+              const result = await libraryService.createYourItemCategory({
+                name: itemCategoryName.trim(),
+                productCategoryId,
+              });
+              itemCategoryId = result.data?.id || result.id || (result as any).id;
+            }
           }
           itemCategoryMap[itemCategoryName] = itemCategoryId;
         }
@@ -271,23 +326,28 @@ const CategoryWizard: React.FC<CategoryWizardProps> = ({
         if (!itemCategoryId) continue;
 
         for (const subCategoryName of subCategoryNames) {
-          const existingSub = existingSubCategories.find(
-            sc => sc.name.toLowerCase() === subCategoryName.toLowerCase() &&
-            sc.itemCategoryId === itemCategoryId
-          );
+          if (!subCategoryName.trim()) continue; // Skip empty names
+          
+          // If editing, always update the existing category
+          if (editingRow?.subCategoryId) {
+            await libraryService.updateYourSubCategory(editingRow.subCategoryId, {
+              name: subCategoryName.trim(),
+              itemCategoryId,
+            });
+          } else {
+            // Check if category with same name already exists for this item category
+            const existingSub = existingSubCategories.find(
+              sc => sc.name.toLowerCase() === subCategoryName.trim().toLowerCase() &&
+              sc.itemCategoryId === itemCategoryId
+            );
 
-          if (existingSub) {
-            if (editingRow?.subCategoryId === existingSub.id) {
-              await libraryService.updateYourSubCategory(existingSub.id, {
-                name: subCategoryName,
+            if (!existingSub) {
+              // Create new category only if it doesn't exist
+              await libraryService.createYourSubCategory({
+                name: subCategoryName.trim(),
                 itemCategoryId,
               });
             }
-          } else {
-            await libraryService.createYourSubCategory({
-              name: subCategoryName,
-              itemCategoryId,
-            });
           }
         }
       }

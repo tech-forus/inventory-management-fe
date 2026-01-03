@@ -92,7 +92,11 @@ const Step3SubCategories: React.FC<Step3SubCategoriesProps> = ({
       );
     }
     
-    const currentValue = subCategories[itemCategoryName]?.[0] || editingRow.subCategory || '';
+    // Use current state value, or fallback to editingRow only on initial load
+    const currentSubCategories = subCategories[itemCategoryName] || [];
+    const currentValue = currentSubCategories.length > 0 
+      ? currentSubCategories[0] 
+      : (editingRow.subCategory !== '—' ? editingRow.subCategory : '');
     const existingForItem = getExistingSubCategoriesForItem(itemCategoryName);
 
     return (
@@ -114,7 +118,8 @@ const Step3SubCategories: React.FC<Step3SubCategoriesProps> = ({
             value={currentValue}
             onChange={(e) => {
               const value = e.target.value;
-              handleSubCategoryChange(itemCategoryName, value ? [value] : []);
+              // Always update state, even if empty - let user clear the field
+              handleSubCategoryChange(itemCategoryName, [value]);
             }}
             placeholder="Enter sub category name"
             className="w-full px-4 py-3 border border-blue-500 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-base"

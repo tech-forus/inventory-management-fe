@@ -59,7 +59,11 @@ const Step2ItemCategories: React.FC<Step2ItemCategoriesProps> = ({
   // For edit mode, show simple text input
   if (isEditing && editingRow && productCategories.length > 0) {
     const productCategoryName = productCategories[0];
-    const currentValue = itemCategories[productCategoryName]?.[0] || editingRow.itemCategory || '';
+    // Use current state value, or fallback to editingRow only on initial load
+    const currentItemCategories = itemCategories[productCategoryName] || [];
+    const currentValue = currentItemCategories.length > 0 
+      ? currentItemCategories[0] 
+      : (editingRow.itemCategory !== '—' ? editingRow.itemCategory : '');
     const existingForProduct = getExistingItemCategoriesForProduct(productCategoryName);
 
     return (
@@ -76,7 +80,8 @@ const Step2ItemCategories: React.FC<Step2ItemCategoriesProps> = ({
             value={currentValue}
             onChange={(e) => {
               const value = e.target.value;
-              handleItemCategoryChange(productCategoryName, value ? [value] : []);
+              // Always update state, even if empty - let user clear the field
+              handleItemCategoryChange(productCategoryName, [value]);
             }}
             placeholder="Enter item category name"
             className="w-full px-4 py-3 border border-blue-500 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-base"

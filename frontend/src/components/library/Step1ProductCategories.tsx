@@ -63,7 +63,8 @@ const Step1ProductCategories: React.FC<Step1ProductCategoriesProps> = ({
 
   // For edit mode, show simple text input
   if (isEditing && editingRow) {
-    const currentValue = productCategories[0] || editingRow.productCategory || '';
+    // Use the current state value, or fallback to editingRow only on initial load
+    const currentValue = productCategories.length > 0 ? productCategories[0] : (editingRow.productCategory !== '—' ? editingRow.productCategory : '');
     
     return (
       <div className="space-y-4">
@@ -76,7 +77,8 @@ const Step1ProductCategories: React.FC<Step1ProductCategoriesProps> = ({
             value={currentValue}
             onChange={(e) => {
               const value = e.target.value;
-              onChange(value ? [value] : []);
+              // Always update state, even if empty - let user clear the field
+              onChange([value]);
             }}
             placeholder="Enter product category name"
             className="w-full px-4 py-3 border border-blue-500 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-base"
