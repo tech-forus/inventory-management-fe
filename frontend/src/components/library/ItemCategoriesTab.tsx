@@ -42,6 +42,10 @@ const ItemCategoriesTab: React.FC<ItemCategoriesTabProps> = ({
   const [productCategories, setProductCategories] = useState<ProductCategory[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const PRODUCT_CACHE_KEY = 'productCategoryFormDraft';
+  const ITEM_CACHE_KEY = 'itemCategoryFormDraft';
+  const CACHE_EXPIRY = 24 * 60 * 60 * 1000; // 24 hours
+
   const [categoryForm, setCategoryForm] = useState<Partial<ItemCategory>>({
     name: '',
     productCategoryId: filterProductCategory ? parseInt(filterProductCategory) : 0,
@@ -52,11 +56,104 @@ const ItemCategoriesTab: React.FC<ItemCategoriesTabProps> = ({
     { name: '' }
   ]);
 
+  // Cache functions
+  const loadProductFromCache = (products: ProductCategory[]): number | null => {
+    try {
+      const cached = localStorage.getItem(PRODUCT_CACHE_KEY);
+      if (!cached) return null;
+      
+      const cacheData = JSON.parse(cached);
+      const cacheAge = Date.now() - (cacheData.timestamp || 0);
+      
+      if (cacheAge > CACHE_EXPIRY) {
+        localStorage.removeItem(PRODUCT_CACHE_KEY);
+        return null;
+      }
+      
+      // Return product category ID if name exists (indicating it was filled)
+      if (cacheData.categoryForm?.name) {
+        // Try to find matching product category by name
+        const matchingProduct = products.find(
+          p => p.name.toLowerCase() === cacheData.categoryForm.name.toLowerCase()
+        );
+        return matchingProduct?.id || null;
+      }
+      return null;
+    } catch (error) {
+      console.error('Failed to load product from cache:', error);
+      return null;
+    }
+  };
+
+  const saveToCache = () => {
+    try {
+      const cacheData = {
+        productCategoryId: categoryForm.productCategoryId,
+        categoryForm,
+        multipleCategories,
+        timestamp: Date.now()
+      };
+      localStorage.setItem(ITEM_CACHE_KEY, JSON.stringify(cacheData));
+    } catch (error) {
+      console.error('Failed to save to cache:', error);
+    }
+  };
+
+  const loadFromCache = (): boolean => {
+    try {
+      const cached = localStorage.getItem(ITEM_CACHE_KEY);
+      if (!cached) return false;
+      
+      const cacheData = JSON.parse(cached);
+      const cacheAge = Date.now() - (cacheData.timestamp || 0);
+      
+      if (cacheAge > CACHE_EXPIRY) {
+        localStorage.removeItem(ITEM_CACHE_KEY);
+        return false;
+      }
+      
+      if (cacheData.categoryForm) {
+        setCategoryForm(cacheData.categoryForm);
+      }
+      if (cacheData.multipleCategories) {
+        setMultipleCategories(cacheData.multipleCategories);
+      }
+      return true;
+    } catch (error) {
+      console.error('Failed to load from cache:', error);
+      localStorage.removeItem(ITEM_CACHE_KEY);
+      return false;
+    }
+  };
+
+  const clearCache = () => {
+    localStorage.removeItem(ITEM_CACHE_KEY);
+    localStorage.removeItem(PRODUCT_CACHE_KEY);
+  };
+
   useEffect(() => {
     libraryService.getYourProductCategories().then((res) => {
-      setProductCategories(res.data || []);
+      const products = res.data || [];
+      setProductCategories(products);
+      
+      // After products are loaded, try to load cached product category
+      if (!editingCategory && !filterProductCategory) {
+        const cachedProductId = loadProductFromCache(products);
+        if (cachedProductId) {
+          setCategoryForm(prev => ({ ...prev, productCategoryId: cachedProductId }));
+        }
+        // Also load item category cache
+        loadFromCache();
+      }
     });
   }, []);
+
+  // Save to cache when form changes (only for new categories)
+  useEffect(() => {
+    if (!editingCategory && (categoryForm.productCategoryId || categoryForm.name || multipleCategories.some(c => c.name))) {
+      saveToCache();
+    }
+  }, [categoryForm, multipleCategories]);
 
   const handleOpenDialog = (category?: ItemCategory) => {
     if (category) {
@@ -98,6 +195,9 @@ const ItemCategoriesTab: React.FC<ItemCategoriesTabProps> = ({
         await libraryService.createYourItemCategory(categoryForm);
       }
       setShowDialog(false);
+      if (!editingCategory) {
+        clearCache(); // Clear cache after successful save
+      }
       onRefresh();
     } catch (error: any) {
       alert(error.response?.data?.error || 'Failed to save item category');
@@ -132,6 +232,7 @@ const ItemCategoriesTab: React.FC<ItemCategoriesTabProps> = ({
       await Promise.all(promises);
       setShowDialog(false);
       setMultipleCategories([{ name: '' }]);
+      clearCache(); // Clear cache after successful save
       onRefresh();
     } catch (error: any) {
       alert(error.response?.data?.error || 'Failed to save item categories');

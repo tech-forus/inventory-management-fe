@@ -41,6 +41,11 @@ const SubCategoriesTab: React.FC<SubCategoriesTabProps> = ({
   const [itemCategories, setItemCategories] = useState<ItemCategory[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const PRODUCT_CACHE_KEY = 'productCategoryFormDraft';
+  const ITEM_CACHE_KEY = 'itemCategoryFormDraft';
+  const SUB_CACHE_KEY = 'subCategoryFormDraft';
+  const CACHE_EXPIRY = 24 * 60 * 60 * 1000; // 24 hours
+
   const [categoryForm, setCategoryForm] = useState<Partial<SubCategory>>({
     name: '',
     itemCategoryId: filterItemCategory ? parseInt(filterItemCategory) : 0,
@@ -51,11 +56,159 @@ const SubCategoriesTab: React.FC<SubCategoriesTabProps> = ({
     { name: '' }
   ]);
 
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [showUnsavedWarning, setShowUnsavedWarning] = useState(false);
+  const [pendingNavigation, setPendingNavigation] = useState<(() => void) | null>(null);
+
+  // Cache functions
+  const loadProductFromCache = (products: any[]): number | null => {
+    try {
+      const cached = localStorage.getItem(PRODUCT_CACHE_KEY);
+      if (!cached) return null;
+      
+      const cacheData = JSON.parse(cached);
+      const cacheAge = Date.now() - (cacheData.timestamp || 0);
+      
+      if (cacheAge > CACHE_EXPIRY) {
+        localStorage.removeItem(PRODUCT_CACHE_KEY);
+        return null;
+      }
+      
+      if (cacheData.categoryForm?.name) {
+        const matchingProduct = products.find(
+          p => p.name.toLowerCase() === cacheData.categoryForm.name.toLowerCase()
+        );
+        return matchingProduct?.id || null;
+      }
+      return null;
+    } catch (error) {
+      console.error('Failed to load product from cache:', error);
+      return null;
+    }
+  };
+
+  const loadItemFromCache = (items: ItemCategory[]): number | null => {
+    try {
+      const cached = localStorage.getItem(ITEM_CACHE_KEY);
+      if (!cached) return null;
+      
+      const cacheData = JSON.parse(cached);
+      const cacheAge = Date.now() - (cacheData.timestamp || 0);
+      
+      if (cacheAge > CACHE_EXPIRY) {
+        localStorage.removeItem(ITEM_CACHE_KEY);
+        return null;
+      }
+      
+      if (cacheData.categoryForm?.name) {
+        const matchingItem = items.find(
+          i => i.name.toLowerCase() === cacheData.categoryForm.name.toLowerCase()
+        );
+        return matchingItem?.id || null;
+      }
+      return null;
+    } catch (error) {
+      console.error('Failed to load item from cache:', error);
+      return null;
+    }
+  };
+
+  const saveToCache = () => {
+    try {
+      const cacheData = {
+        categoryForm,
+        multipleCategories,
+        timestamp: Date.now()
+      };
+      localStorage.setItem(SUB_CACHE_KEY, JSON.stringify(cacheData));
+      setHasUnsavedChanges(true);
+    } catch (error) {
+      console.error('Failed to save to cache:', error);
+    }
+  };
+
+  const loadFromCache = (): boolean => {
+    try {
+      const cached = localStorage.getItem(SUB_CACHE_KEY);
+      if (!cached) return false;
+      
+      const cacheData = JSON.parse(cached);
+      const cacheAge = Date.now() - (cacheData.timestamp || 0);
+      
+      if (cacheAge > CACHE_EXPIRY) {
+        localStorage.removeItem(SUB_CACHE_KEY);
+        return false;
+      }
+      
+      if (cacheData.categoryForm) {
+        setCategoryForm(cacheData.categoryForm);
+      }
+      if (cacheData.multipleCategories) {
+        setMultipleCategories(cacheData.multipleCategories);
+      }
+      return true;
+    } catch (error) {
+      console.error('Failed to load from cache:', error);
+      localStorage.removeItem(SUB_CACHE_KEY);
+      return false;
+    }
+  };
+
+  const clearAllCaches = () => {
+    localStorage.removeItem(PRODUCT_CACHE_KEY);
+    localStorage.removeItem(ITEM_CACHE_KEY);
+    localStorage.removeItem(SUB_CACHE_KEY);
+    setHasUnsavedChanges(false);
+  };
+
   useEffect(() => {
+    // Load item categories
     libraryService.getYourItemCategories().then((res) => {
-      setItemCategories(res.data || []);
+      const items = res.data || [];
+      setItemCategories(items);
+      
+      // After items are loaded, try to load cached data
+      if (!editingCategory && !filterItemCategory) {
+        // Load product category from cache
+        libraryService.getYourProductCategories().then((productRes) => {
+          const products = productRes.data || [];
+          loadProductFromCache(products); // Load but don't use directly - item cache has the ID
+          
+          // Load item category from cache
+          const cachedItemId = loadItemFromCache(items);
+          
+          if (cachedItemId) {
+            setCategoryForm(prev => ({ ...prev, itemCategoryId: cachedItemId }));
+          }
+          
+          // Load sub category cache
+          loadFromCache();
+        });
+      }
     });
   }, []);
+
+  // Save to cache when form changes (only for new categories)
+  useEffect(() => {
+    if (!editingCategory && (categoryForm.itemCategoryId || categoryForm.name || multipleCategories.some(c => c.name))) {
+      saveToCache();
+    }
+  }, [categoryForm, multipleCategories]);
+
+  // Handle browser back/refresh warning
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (hasUnsavedChanges) {
+        clearAllCaches(); // Clear cache when closing tab
+        e.preventDefault();
+        e.returnValue = '';
+        return '';
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [hasUnsavedChanges]);
 
   const handleOpenDialog = (category?: SubCategory) => {
     if (category) {
@@ -97,6 +250,9 @@ const SubCategoriesTab: React.FC<SubCategoriesTabProps> = ({
         await libraryService.createYourSubCategory(categoryForm);
       }
       setShowDialog(false);
+      if (!editingCategory) {
+        clearAllCaches(); // Clear cache after successful save
+      }
       onRefresh();
     } catch (error: any) {
       alert(error.response?.data?.error || 'Failed to save sub category');
@@ -131,9 +287,96 @@ const SubCategoriesTab: React.FC<SubCategoriesTabProps> = ({
       await Promise.all(promises);
       setShowDialog(false);
       setMultipleCategories([{ name: '' }]);
+      clearAllCaches(); // Clear cache after successful save
       onRefresh();
     } catch (error: any) {
       alert(error.response?.data?.error || 'Failed to save sub categories');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // Save All function - validates and saves all three levels atomically
+  const handleSaveAll = async () => {
+    // Load all caches
+    const productCache = localStorage.getItem(PRODUCT_CACHE_KEY);
+    const itemCache = localStorage.getItem(ITEM_CACHE_KEY);
+    const subCache = localStorage.getItem(SUB_CACHE_KEY);
+
+    if (!productCache || !itemCache || !subCache) {
+      alert('Please complete all three levels (Product Category, Item Category, Sub Category) before saving.');
+      return;
+    }
+
+    try {
+      const productData = JSON.parse(productCache);
+      const itemData = JSON.parse(itemCache);
+      const subData = JSON.parse(subCache);
+
+      // Validate Product Category
+      if (!productData.categoryForm?.name || !productData.categoryForm.name.trim()) {
+        alert('Product Category name is required');
+        return;
+      }
+
+      // Validate Item Category
+      if (!itemData.categoryForm?.name || !itemData.categoryForm.name.trim()) {
+        alert('Item Category name is required');
+        return;
+      }
+
+      // Validate Sub Category
+      if (!subData.categoryForm?.itemCategoryId || subData.categoryForm.itemCategoryId === 0) {
+        alert('Item Category must be selected in Sub Category');
+        return;
+      }
+      const validSubs = subData.multipleCategories?.filter((c: any) => c.name?.trim()) || [];
+      if (validSubs.length === 0) {
+        alert('At least one Sub Category is required');
+        return;
+      }
+
+      setSaving(true);
+
+      // 1. Save Product Category
+      let productCategoryId: number;
+      const productRes = await libraryService.createYourProductCategory({
+        name: productData.categoryForm.name.trim(),
+        description: productData.categoryForm.description || '',
+      });
+      productCategoryId = productRes.data?.id;
+      if (!productCategoryId) {
+        throw new Error('Failed to create product category');
+      }
+
+      // 2. Save Item Category (use the newly created productCategoryId)
+      let itemCategoryId: number;
+      const itemRes = await libraryService.createYourItemCategory({
+        productCategoryId: productCategoryId, // Use the newly created product category ID
+        name: itemData.categoryForm.name.trim(),
+        description: itemData.categoryForm.description || '',
+      });
+      itemCategoryId = itemRes.data?.id;
+      if (!itemCategoryId) {
+        throw new Error('Failed to create item category');
+      }
+
+      // 3. Save all Sub Categories
+      const subPromises = validSubs.map((sub: any) =>
+        libraryService.createYourSubCategory({
+          itemCategoryId: itemCategoryId,
+          name: sub.name.trim(),
+          description: '',
+        })
+      );
+      await Promise.all(subPromises);
+
+      // Clear all caches after successful save
+      clearAllCaches();
+      alert('All categories saved successfully!');
+      onRefresh();
+    } catch (error: any) {
+      alert(error.response?.data?.error || 'Failed to save all categories');
     } finally {
       setSaving(false);
     }
@@ -210,6 +453,43 @@ const SubCategoriesTab: React.FC<SubCategoriesTabProps> = ({
 
   return (
     <>
+      {/* Unsaved Changes Warning Dialog */}
+      {showUnsavedWarning && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4 p-6">
+            <h2 className="text-xl font-bold text-gray-900 mb-4">Unsaved Changes</h2>
+            <p className="text-gray-700 mb-6">
+              Unsaved changes will be lost. Nothing will be saved to database.
+            </p>
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => {
+                  setShowUnsavedWarning(false);
+                  setPendingNavigation(null);
+                }}
+                className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+              >
+                Stay & Continue Editing
+              </button>
+              <button
+                onClick={() => {
+                  setShowUnsavedWarning(false);
+                  clearAllCaches(); // Clear all caches when discarding
+                  setHasUnsavedChanges(false);
+                  if (pendingNavigation) {
+                    pendingNavigation();
+                    setPendingNavigation(null);
+                  }
+                }}
+                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+              >
+                Discard & Leave
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="space-y-4">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div className="flex-1 w-full sm:w-auto">
@@ -226,6 +506,14 @@ const SubCategoriesTab: React.FC<SubCategoriesTabProps> = ({
           </div>
           <div className="flex items-center gap-2">
             <button
+              onClick={handleSaveAll}
+              disabled={saving || !hasUnsavedChanges}
+              className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+            >
+              <Plus className="w-5 h-5" />
+              Save All to Database
+            </button>
+            <button
               onClick={() => handleOpenDialog()}
               className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2"
             >
@@ -234,7 +522,7 @@ const SubCategoriesTab: React.FC<SubCategoriesTabProps> = ({
             </button>
             <button
               onClick={handleFileSelect}
-              className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center gap-2"
+              className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 flex items-center gap-2"
             >
               <Upload className="w-5 h-5" />
               Upload Excel

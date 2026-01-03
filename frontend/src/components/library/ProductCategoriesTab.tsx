@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Plus, Search, Edit, Trash2, X, Upload } from 'lucide-react';
 import { libraryService } from '../../services/libraryService';
 import { validateRequired } from '../../utils/validators';
@@ -26,10 +26,69 @@ const ProductCategoriesTab: React.FC<ProductCategoriesTabProps> = ({ productCate
   const [errors, setErrors] = useState<Record<string, string>>({});
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const CACHE_KEY = 'productCategoryFormDraft';
+  const CACHE_EXPIRY = 24 * 60 * 60 * 1000; // 24 hours
+
   const [categoryForm, setCategoryForm] = useState<Partial<ProductCategory>>({
     name: '',
     description: '',
   });
+
+  // Cache functions
+  const saveToCache = () => {
+    try {
+      const cacheData = {
+        categoryForm,
+        timestamp: Date.now()
+      };
+      localStorage.setItem(CACHE_KEY, JSON.stringify(cacheData));
+    } catch (error) {
+      console.error('Failed to save to cache:', error);
+    }
+  };
+
+  const loadFromCache = (): boolean => {
+    try {
+      const cached = localStorage.getItem(CACHE_KEY);
+      if (!cached) return false;
+      
+      const cacheData = JSON.parse(cached);
+      const cacheAge = Date.now() - (cacheData.timestamp || 0);
+      
+      if (cacheAge > CACHE_EXPIRY) {
+        localStorage.removeItem(CACHE_KEY);
+        return false;
+      }
+      
+      if (cacheData.categoryForm) {
+        setCategoryForm(cacheData.categoryForm);
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error('Failed to load from cache:', error);
+      localStorage.removeItem(CACHE_KEY);
+      return false;
+    }
+  };
+
+  const clearCache = () => {
+    localStorage.removeItem(CACHE_KEY);
+  };
+
+  // Load from cache on mount (only for new categories, not editing)
+  useEffect(() => {
+    if (!editingCategory && !showDialog) {
+      loadFromCache();
+    }
+  }, []);
+
+  // Save to cache when form changes (only for new categories)
+  useEffect(() => {
+    if (!editingCategory && categoryForm.name) {
+      saveToCache();
+    }
+  }, [categoryForm]);
 
   const handleOpenDialog = (category?: ProductCategory) => {
     if (category) {
@@ -65,6 +124,9 @@ const ProductCategoriesTab: React.FC<ProductCategoriesTabProps> = ({ productCate
         await libraryService.createYourProductCategory(categoryForm);
       }
       setShowDialog(false);
+      if (!editingCategory) {
+        clearCache(); // Clear cache after successful save
+      }
       onRefresh();
     } catch (error: any) {
       alert(error.response?.data?.error || 'Failed to save product category');
