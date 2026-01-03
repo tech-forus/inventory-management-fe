@@ -487,26 +487,26 @@ const CategoryMasterTab: React.FC<CategoryMasterTabProps> = ({
             <table className="w-full">
               <thead className="bg-gray-50 border-b border-gray-200">
                 <tr>
-                  <th className="px-3 py-2 text-center text-xs font-semibold text-gray-700 uppercase">Product Category</th>
-                  <th className="px-3 py-2 text-center text-xs font-semibold text-gray-700 uppercase">Item Category</th>
-                  <th className="px-3 py-2 text-center text-xs font-semibold text-gray-700 uppercase">Sub Category</th>
-                  <th className="px-3 py-2 text-center text-xs font-semibold text-gray-700 uppercase">Created Date</th>
+                  <th className="px-3 py-2 text-center text-base font-semibold text-gray-700 uppercase">Product Category</th>
+                  <th className="px-3 py-2 text-center text-base font-semibold text-gray-700 uppercase">Item Category</th>
+                  <th className="px-3 py-2 text-center text-base font-semibold text-gray-700 uppercase">Sub Category</th>
+                  <th className="px-3 py-2 text-center text-base font-semibold text-gray-700 uppercase">Created Date</th>
                   <th className="px-3 py-2 text-center text-xs font-semibold text-gray-700 uppercase">Actions</th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {filteredRows.map((row) => (
                   <tr key={row.id} className="hover:bg-gray-50">
-                    <td className="px-3 py-2 text-xs text-gray-900 text-center">
+                    <td className="px-3 py-2 text-base text-gray-900 text-center">
                       {row.productCategory}
                     </td>
-                    <td className="px-3 py-2 text-xs text-gray-900 text-center">
+                    <td className="px-3 py-2 text-base text-gray-900 text-center">
                       {row.itemCategory}
                     </td>
-                    <td className="px-3 py-2 text-xs text-gray-900 text-center">
+                    <td className="px-3 py-2 text-base text-gray-900 text-center">
                       {row.subCategory}
                     </td>
-                    <td className="px-3 py-2 text-xs text-gray-500 text-center">
+                    <td className="px-3 py-2 text-base text-gray-500 text-center">
                       {row.createdAt ? formatDate(row.createdAt) : '—'}
                     </td>
                     <td className="px-3 py-2 text-xs text-center">
