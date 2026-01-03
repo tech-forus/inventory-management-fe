@@ -226,14 +226,6 @@ const Sidebar: React.FC = () => {
             path: '/app/reports',
             permission: 'reports.view',
           },
-          {
-            id: 'rejected-items',
-            label: 'REJECTED/SHORT ITEMS',
-            icon: AlertTriangle,
-            path: '/app/rejected-items',
-            permission: 'inventory.view',
-            roles: ['admin', 'super_admin'],
-          },
         ],
       },
       {
