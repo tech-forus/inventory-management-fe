@@ -731,16 +731,19 @@ const IncomingInventoryPage: React.FC = () => {
       {/* Header Section */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="space-y-1">
-      <div className="flex items-center gap-3">
-        <button
-          onClick={() => navigate('/app/inventory')}
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => navigate('/app/inventory')}
               className="text-slate-600 hover:text-indigo-600 transition-colors"
-        >
-          <ArrowLeft className="w-5 h-5" />
-        </button>
-            <h1 className="text-xl font-semibold leading-[1.2] tracking-[-0.01em] text-slate-900">Incoming Inventory</h1>
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </button>
+            <h1 className="text-[24px] font-semibold leading-[1.2] tracking-[-0.01em] text-slate-900">Incoming Inventory</h1>
           </div>
-          <p className="text-sm font-normal leading-[1.5] text-slate-500">Record and manage incoming stock from vendors and suppliers.</p>
+          <div className="flex items-center gap-3">
+            <div className="w-5 h-5"></div>
+            <p className="text-[16px] font-normal leading-[1.5] text-slate-500">Record and manage incoming stock from vendors and suppliers.</p>
+          </div>
         </div>
       </div>
 
