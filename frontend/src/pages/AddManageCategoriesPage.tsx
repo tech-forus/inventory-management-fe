@@ -335,10 +335,12 @@ export default function AddManageCategoriesPage() {
     }
   }, [productSelected, itemsByProduct, subsByProductItem, step]);
 
-  // Handle browser back/refresh warning
+  // Handle browser back/refresh warning and clear cache on close
   useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
       if (hasUnsavedChanges) {
+        // Clear cache when closing tab with unsaved changes
+        clearCache();
         e.preventDefault();
         e.returnValue = '';
         return '';
@@ -1145,6 +1147,7 @@ export default function AddManageCategoriesPage() {
                 onClick={() => {
                   setShowUnsavedWarning(false);
                   setHasUnsavedChanges(false);
+                  clearCache(); // Clear cache when discarding changes
                   if (pendingNavigation) {
                     pendingNavigation();
                     setPendingNavigation(null);
