@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { Plus, Search, Edit, Trash2, X, Upload, Download } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { libraryService } from '../../services/libraryService';
@@ -58,7 +57,6 @@ const CategoryMasterTab: React.FC<CategoryMasterTabProps> = ({
   loading,
   onRefresh,
 }) => {
-  const navigate = useNavigate();
   const [search, setSearch] = useState('');
   const [showCompleteOnly, setShowCompleteOnly] = useState(false);
   const [unifiedRows, setUnifiedRows] = useState<UnifiedCategoryRow[]>([]);
@@ -806,13 +804,6 @@ const CategoryMasterTab: React.FC<CategoryMasterTabProps> = ({
         </div>
         <div className="flex flex-wrap gap-2">
           <button
-            onClick={() => navigate('/app/library/categories/manage')}
-            className="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2 text-sm"
-          >
-            <Plus className="w-4 h-4" />
-            Add Category
-          </button>
-          <button
             onClick={handleDownloadTemplate}
             className="px-3 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 flex items-center gap-2 text-sm"
             title="Download unified Excel template with all category types"
@@ -876,33 +867,7 @@ const CategoryMasterTab: React.FC<CategoryMasterTabProps> = ({
                     <td className="px-3 py-2 text-xs text-center">
                       <div className="flex items-center justify-center gap-2">
                         <button
-                          onClick={() => {
-                            // Navigate to manage page with category data for editing
-                            const navState: any = {
-                              fromCategoryMaster: true,
-                              editMode: true,
-                            };
-
-                            // Always include product category if available
-                            if (row.productCategoryId && row.productCategory && row.productCategory !== '—') {
-                              navState.productCategoryId = row.productCategoryId;
-                              navState.productCategoryName = row.productCategory;
-                            }
-
-                            // Include item category if available
-                            if (row.itemCategoryId && row.itemCategory && row.itemCategory !== '—') {
-                              navState.itemCategoryId = row.itemCategoryId;
-                              navState.itemCategoryName = row.itemCategory;
-                            }
-
-                            // Include sub category if available
-                            if (row.subCategoryId && row.subCategory && row.subCategory !== '—') {
-                              navState.subCategoryId = row.subCategoryId;
-                              navState.subCategoryName = row.subCategory;
-                            }
-
-                            navigate('/app/library/categories/manage', { state: navState });
-                          }}
+                          onClick={() => handleOpenDialog(row.type, row)}
                           className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                           title="Edit"
                         >
