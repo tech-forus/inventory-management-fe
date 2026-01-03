@@ -288,14 +288,6 @@ const LibraryPage: React.FC = () => {
 
   return (
     <div className="p-[28.8px] space-y-9 w-full animate-in fade-in slide-in-from-bottom-4 duration-500">
-      {/* Header Section */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-[21.6px]">
-        <div className="space-y-[7.2px]">
-          <h1 className="text-[32.4px] font-black text-slate-900 tracking-tight">Library</h1>
-          <p className="text-[16.2px] text-slate-500 font-medium">Master data management for vendors, brands, categories, and more.</p>
-        </div>
-      </div>
-
         {/* 2-Column Layout */}
         <div className="grid grid-cols-12 gap-[21.6px]">
           {/* Left: Master Navigator */}

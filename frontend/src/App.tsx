@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { lazy, Suspense } from 'react'
 import { Menu } from 'lucide-react'
 import Sidebar from './components/layout/Sidebar'
@@ -48,6 +48,8 @@ const LoadingFallback = () => (
 // Layout component with Sidebar
 const AppLayout = ({ children, hideDefaultHeader }: { children: React.ReactNode; hideDefaultHeader?: boolean }) => {
   const { isOpen, toggleSidebar } = useSidebar();
+  const location = useLocation();
+  const isLibraryPage = location.pathname === '/app/library';
   
   return (
     <div className="flex h-screen bg-bg-light">
@@ -57,14 +59,19 @@ const AppLayout = ({ children, hideDefaultHeader }: { children: React.ReactNode;
         {!hideDefaultHeader && (
           <div className="sticky top-0 z-30 bg-white border-b border-gray-200 shadow-sm">
             <div className="flex items-center justify-between px-4 py-3">
-              {/* Hamburger Button - Always visible */}
-            <button
-              onClick={toggleSidebar}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors duration-200 flex items-center justify-center"
-                aria-label={isOpen ? "Close sidebar" : "Open sidebar"}
-            >
-                <Menu className="w-5 h-5 text-gray-700" />
-            </button>
+              {/* Hamburger Button and Page Title */}
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={toggleSidebar}
+                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors duration-200 flex items-center justify-center"
+                  aria-label={isOpen ? "Close sidebar" : "Open sidebar"}
+                >
+                  <Menu className="w-5 h-5 text-gray-700" />
+                </button>
+                {isLibraryPage && (
+                  <h1 className="text-xl font-semibold text-gray-900">Library</h1>
+                )}
+              </div>
               
               {/* Right side can be used for search, user menu, etc. */}
               <div className="flex items-center gap-3">
