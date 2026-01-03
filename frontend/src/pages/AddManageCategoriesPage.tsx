@@ -200,10 +200,97 @@ export default function AddManageCategoriesPage() {
   const productInputRef = useRef<HTMLInputElement>(null);
   const pendingNavStateRef = useRef<any>((location as any).state || null);
   
+  // Cache key for form data
+  const CACHE_KEY = 'categoryFormDraft';
+  
   // Autocomplete dropdown states
   const [showProductSuggestions, setShowProductSuggestions] = useState(false);
   const [showItemSuggestions, setShowItemSuggestions] = useState<Record<number, boolean>>({});
   const [showSubSuggestions, setShowSubSuggestions] = useState<Record<string, boolean>>({});
+
+  // Cache functions
+  const saveToCache = () => {
+    try {
+      const cacheData = {
+        productSelected,
+        itemsByProduct,
+        subsByProductItem,
+        step,
+        timestamp: Date.now()
+      };
+      localStorage.setItem(CACHE_KEY, JSON.stringify(cacheData));
+    } catch (error) {
+      console.error('Failed to save to cache:', error);
+    }
+  };
+
+  const loadFromCache = async (): Promise<boolean> => {
+    try {
+      const cached = localStorage.getItem(CACHE_KEY);
+      if (!cached) return false;
+      
+      const cacheData = JSON.parse(cached);
+      
+      // Only load if cache is recent (within 24 hours)
+      const cacheAge = Date.now() - (cacheData.timestamp || 0);
+      const maxAge = 24 * 60 * 60 * 1000; // 24 hours
+      
+      if (cacheAge > maxAge) {
+        localStorage.removeItem(CACHE_KEY);
+        return false;
+      }
+      
+      if (cacheData.productSelected) {
+        setProductSelected(cacheData.productSelected);
+      }
+      if (cacheData.itemsByProduct) {
+        setItemsByProduct(cacheData.itemsByProduct);
+      }
+      if (cacheData.subsByProductItem) {
+        setSubsByProductItem(cacheData.subsByProductItem);
+      }
+      
+      // Restore step and load related data
+      if (cacheData.step) {
+        // If on step 2 or 3, load items for products that have IDs
+        if (cacheData.step >= 2 && cacheData.productSelected) {
+          const productsWithIds = cacheData.productSelected
+            .filter((t: Tag) => !t.isDeleted && t.id)
+            .map((t: Tag) => t.id as number);
+          
+          if (productsWithIds.length > 0) {
+            await Promise.all(productsWithIds.map((id: number) => loadItems(id)));
+            
+            // If on step 3, load subs for items that exist in cache
+            if (cacheData.step === 3 && cacheData.itemsByProduct) {
+              const itemIdsToLoad: number[] = [];
+              for (const productId of productsWithIds) {
+                const cachedItems = cacheData.itemsByProduct[productId] || [];
+                const validCachedItems = cachedItems.filter((item: Tag) => !item.isDeleted && item.id);
+                itemIdsToLoad.push(...validCachedItems.map((item: Tag) => item.id as number));
+              }
+              
+              if (itemIdsToLoad.length > 0) {
+                await Promise.all(itemIdsToLoad.map((itemId: number) => loadSubs(itemId)));
+              }
+            }
+          }
+        }
+        
+        setStep(cacheData.step);
+      }
+      
+      return true;
+    } catch (error) {
+      console.error('Failed to load from cache:', error);
+      localStorage.removeItem(CACHE_KEY);
+      return false;
+    }
+  };
+
+  const clearCache = () => {
+    localStorage.removeItem(CACHE_KEY);
+  };
 
   const loadProducts = async () => {
     const res = await libraryService.getYourProductCategories();
@@ -230,7 +317,7 @@ export default function AddManageCategoriesPage() {
     });
   };
 
-  // Track unsaved changes
+  // Track unsaved changes and save to cache
   useEffect(() => {
     const hasProductChanges = productSelected.some((t) => !t.isDeleted && (!t.id || t.isNew));
     const hasItemChanges = Object.values(itemsByProduct).some((items) => 
@@ -241,7 +328,12 @@ export default function AddManageCategoriesPage() {
     );
     
     setHasUnsavedChanges(hasProductChanges || hasItemChanges || hasSubChanges);
-  }, [productSelected, itemsByProduct, subsByProductItem]);
+    
+    // Save to cache whenever form data changes
+    if (productSelected.length > 0 || Object.keys(itemsByProduct).length > 0 || Object.keys(subsByProductItem).length > 0) {
+      saveToCache();
+    }
+  }, [productSelected, itemsByProduct, subsByProductItem, step]);
 
   // Handle browser back/refresh warning
   useEffect(() => {
@@ -260,6 +352,16 @@ export default function AddManageCategoriesPage() {
   useEffect(() => {
     setLoading(true);
     loadProducts()
+      .then(async () => {
+        // Load cached data after products are loaded, but only if not in edit mode
+        const st = pendingNavStateRef.current;
+        if (!st?.fromCategoryMaster || !st?.editMode) {
+          const hasCachedData = await loadFromCache();
+          if (hasCachedData) {
+            pushToast({ type: 'info', title: 'Restored previous form data from cache' });
+          }
+        }
+      })
       .catch((e) => {
         console.error(e);
         pushToast({ type: 'error', title: 'Failed to load product categories' });
@@ -961,6 +1063,7 @@ export default function AddManageCategoriesPage() {
       }
 
       setHasUnsavedChanges(false);
+      clearCache(); // Clear cache after successful save
       pushToast({ type: 'success', title: 'All changes saved' });
       emitCategoriesUpdated();
       navigate('/app/library');
@@ -1007,6 +1110,7 @@ export default function AddManageCategoriesPage() {
         }
       }
 
+      clearCache(); // Clear cache after successful save
       pushToast({ type: 'success', title: 'All changes saved' });
       emitCategoriesUpdated();
       navigate('/app/library');
