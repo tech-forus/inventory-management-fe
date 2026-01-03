@@ -118,6 +118,22 @@ export default function AddManageCategoriesPage() {
     }, 3500);
   };
 
+  // Validation errors state
+  const [validationErrors, setValidationErrors] = useState<{
+    productCategories: string;
+    itemCategories: Record<number, string>;
+    subCategories: Record<string, string>;
+  }>({
+    productCategories: '',
+    itemCategories: {},
+    subCategories: {},
+  });
+
+  // Track unsaved changes
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [showUnsavedWarning, setShowUnsavedWarning] = useState(false);
+  const [pendingNavigation, setPendingNavigation] = useState<(() => void) | null>(null);
+
   // Product category
   const [loading, setLoading] = useState(false);
   const [productCategories, setProductCategories] = useState<ProductCategory[]>([]);
@@ -214,6 +230,33 @@ export default function AddManageCategoriesPage() {
       return [...filtered, ...newSubs];
     });
   };
+
+  // Track unsaved changes
+  useEffect(() => {
+    const hasProductChanges = productSelected.some((t) => !t.isDeleted && (!t.id || t.isNew));
+    const hasItemChanges = Object.values(itemsByProduct).some((items) => 
+      items.some((item) => !item.isDeleted && (!item.id || item.isNew))
+    );
+    const hasSubChanges = Object.values(subsByProductItem).some((subs) => 
+      subs.some((sub) => !sub.isDeleted && (!sub.id || sub.isNew))
+    );
+    
+    setHasUnsavedChanges(hasProductChanges || hasItemChanges || hasSubChanges);
+  }, [productSelected, itemsByProduct, subsByProductItem]);
+
+  // Handle browser back/refresh warning
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (hasUnsavedChanges) {
+        e.preventDefault();
+        e.returnValue = '';
+        return '';
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [hasUnsavedChanges]);
 
   useEffect(() => {
     setLoading(true);
@@ -444,17 +487,23 @@ export default function AddManageCategoriesPage() {
   };
 
   const goNextFromProduct = async () => {
-    const updatedProductSelected = await saveProducts();
-    if (!updatedProductSelected) return; // saveProducts failed
+    // Don't save, just navigate - saving only happens when all three levels are complete
+    const selectedProducts = getSelectedProducts();
+    if (selectedProducts.length === 0) {
+      setValidationErrors((prev) => ({ ...prev, productCategories: 'At least one Product Category is required' }));
+      return;
+    }
     
-    const selectedProducts = updatedProductSelected.filter((t: Tag) => !t.isDeleted && t.id);
-    if (selectedProducts.length > 0) {
-      // Refresh items for all selected products before moving to step 2
+    // Clear product category error
+    setValidationErrors((prev) => ({ ...prev, productCategories: '' }));
+    
+    // Load items for existing product categories (if any have IDs)
+    const productsWithIds = selectedProducts.filter((t) => t.id);
+    if (productsWithIds.length > 0) {
       setLoading(true);
       try {
         await Promise.all(
-          selectedProducts
-            .map((t) => loadItems(t.id as number))
+          productsWithIds.map((t) => loadItems(t.id as number))
         );
       } catch (e) {
         console.error('Error loading items:', e);
@@ -462,29 +511,51 @@ export default function AddManageCategoriesPage() {
       } finally {
         setLoading(false);
       }
-      
-      setStep(2);
-      // Scroll to next step horizontally (wizard style)
-      setTimeout(() => {
-        if (wizardContainerRef.current) {
-          wizardContainerRef.current.scrollTo({
-            left: wizardContainerRef.current.clientWidth,
-            behavior: 'smooth'
-          });
-        }
-      }, 100);
     }
+    
+    setStep(2);
+    // Scroll to next step horizontally (wizard style)
+    setTimeout(() => {
+      if (wizardContainerRef.current) {
+        wizardContainerRef.current.scrollTo({
+          left: wizardContainerRef.current.clientWidth,
+          behavior: 'smooth'
+        });
+      }
+    }, 100);
   };
 
   const goNextFromItem = async () => {
-    // Save all items first
-    await saveAllItems();
-    
-    // Refresh items and load sub-categories for all items before moving to step 3
+    // Don't save, just navigate - saving only happens when all three levels are complete
     const selectedProducts = getSelectedProducts();
+    
+    // Validate that each product has at least one item category
+    let hasErrors = false;
+    const itemErrors: Record<number, string> = {};
+    
+    for (const productTag of selectedProducts) {
+      if (!productTag.id) continue;
+      const items = itemsByProduct[productTag.id] || [];
+      const validItems = items.filter((t) => !t.isDeleted);
+      
+      if (validItems.length === 0) {
+        itemErrors[productTag.id] = 'At least one Item Category is required';
+        hasErrors = true;
+      }
+    }
+    
+    if (hasErrors) {
+      setValidationErrors((prev) => ({ ...prev, itemCategories: itemErrors }));
+      return;
+    }
+    
+    // Clear item category errors
+    setValidationErrors((prev) => ({ ...prev, itemCategories: {} }));
+    
+    // Load items and sub-categories for existing data
     setLoading(true);
     try {
-      // Reload items for all products (loadItems now merges properly)
+      // Reload items for all products
       await Promise.all(
         selectedProducts
           .filter((t) => t.id)
@@ -790,19 +861,101 @@ export default function AddManageCategoriesPage() {
     }
   };
 
-  const saveAllAndComplete = async () => {
+  // Validate all three levels before saving
+  const validateAllLevels = (): boolean => {
+    const errors: {
+      productCategories: string;
+      itemCategories: Record<number, string>;
+      subCategories: Record<string, string>;
+    } = {
+      productCategories: '',
+      itemCategories: {},
+      subCategories: {},
+    };
+
     const selectedProducts = getSelectedProducts();
+    
+    // Validate Product Categories
     if (selectedProducts.length === 0) {
-      pushToast({ type: 'error', title: 'Select at least one Product Category first' });
+      errors.productCategories = 'At least one Product Category is required';
+      setValidationErrors(errors);
+      return false;
+    }
+
+    const productNames = selectedProducts.map((t) => normalizeName(t.name));
+    if (productNames.some((n) => !n)) {
+      errors.productCategories = 'Product Category name cannot be empty';
+      setValidationErrors(errors);
+      return false;
+    }
+
+    // Validate Item Categories for each product
+    for (const productTag of selectedProducts) {
+      if (!productTag.id) continue;
+      const items = itemsByProduct[productTag.id] || [];
+      const validItems = items.filter((t) => !t.isDeleted);
+      
+      if (validItems.length === 0) {
+        errors.itemCategories[productTag.id] = 'At least one Item Category is required';
+        setValidationErrors(errors);
+        return false;
+      }
+
+      const itemNames = validItems.map((t) => normalizeName(t.name));
+      if (itemNames.some((n) => !n)) {
+        errors.itemCategories[productTag.id] = 'Item Category name cannot be empty';
+        setValidationErrors(errors);
+        return false;
+      }
+
+      // Validate Sub Categories for each item
+      const itemsForProduct = getItemsForProduct(productTag.id);
+      for (const item of itemsForProduct) {
+        const key = getKey(productTag.id, item.id);
+        const subs = subsByProductItem[key] || [];
+        const validSubs = subs.filter((t) => !t.isDeleted);
+        
+        if (validSubs.length === 0) {
+          errors.subCategories[key] = 'At least one Sub Category is required';
+          setValidationErrors(errors);
+          return false;
+        }
+
+        const subNames = validSubs.map((t) => normalizeName(t.name));
+        if (subNames.some((n) => !n)) {
+          errors.subCategories[key] = 'Sub Category name cannot be empty';
+          setValidationErrors(errors);
+          return false;
+        }
+      }
+    }
+
+    setValidationErrors({ productCategories: '', itemCategories: {}, subCategories: {} });
+    return true;
+  };
+
+  const saveAllAndComplete = async () => {
+    // Validate all three levels first
+    if (!validateAllLevels()) {
+      pushToast({ type: 'error', title: 'Validation failed', message: 'Please fill all required fields' });
       return;
     }
 
+    const selectedProducts = getSelectedProducts();
     setLoading(true);
+    
     try {
-      // 1) Save all item categories for all products
+      // Atomic save: Save all three levels together
+      // 1) Save all product categories
+      const savedProducts = await saveProducts();
+      if (!savedProducts) {
+        throw new Error('Failed to save product categories');
+      }
+
+      // 2) Save all item categories for all products
       await saveAllItems();
 
-      // 2) Reload all items for all products
+      // 3) Reload all items for all products
       const freshItemsPromises = selectedProducts
         .filter((t) => t.id)
         .map((t) => libraryService.getYourItemCategories(t.id as number));
@@ -813,7 +966,7 @@ export default function AddManageCategoriesPage() {
       });
       setItemAll(allFreshItems);
 
-      // 3) Save all sub-categories for all product+item combinations
+      // 4) Save all sub-categories for all product+item combinations
       for (const productTag of selectedProducts) {
         if (!productTag.id) continue;
         const items = getItemsForProduct(productTag.id);
@@ -826,6 +979,7 @@ export default function AddManageCategoriesPage() {
         }
       }
 
+      setHasUnsavedChanges(false);
       pushToast({ type: 'success', title: 'All changes saved' });
       emitCategoriesUpdated();
       navigate('/app/library');
@@ -889,6 +1043,42 @@ export default function AddManageCategoriesPage() {
           display: none;
         }
       `}</style>
+      {/* Unsaved Changes Warning Dialog */}
+      {showUnsavedWarning && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4 p-6">
+            <h2 className="text-xl font-bold text-gray-900 mb-4">Unsaved Changes</h2>
+            <p className="text-gray-700 mb-6">
+              Unsaved changes will be lost. Nothing will be saved to database.
+            </p>
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => {
+                  setShowUnsavedWarning(false);
+                  setPendingNavigation(null);
+                }}
+                className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+              >
+                Stay & Continue Editing
+              </button>
+              <button
+                onClick={() => {
+                  setShowUnsavedWarning(false);
+                  setHasUnsavedChanges(false);
+                  if (pendingNavigation) {
+                    pendingNavigation();
+                    setPendingNavigation(null);
+                  }
+                }}
+                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+              >
+                Discard & Leave
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Toasts */}
       <div className="fixed top-4 right-4 z-50 space-y-2">
         {toasts.map((t) => (
@@ -914,7 +1104,14 @@ export default function AddManageCategoriesPage() {
           <div className="flex items-center gap-4">
             <button
               type="button"
-              onClick={() => navigate('/app/library')}
+              onClick={() => {
+                if (hasUnsavedChanges) {
+                  setPendingNavigation(() => () => navigate('/app/library'));
+                  setShowUnsavedWarning(true);
+                } else {
+                  navigate('/app/library');
+                }
+              }}
               className="text-slate-600 hover:text-slate-900 transition-colors"
             >
               <ArrowLeft className="w-6 h-6" />
@@ -966,9 +1163,11 @@ export default function AddManageCategoriesPage() {
                 </div>
 
                 <div className="mt-4">
-                  <label className="text-xs text-gray-600">Product Category</label>
+                  <label className="text-xs text-gray-600">Product Category <span className="text-red-500">*</span></label>
                   <div className="mt-1 relative autocomplete-container">
-                    <div className="border border-gray-300 rounded-lg px-3 py-2">
+                    <div className={`border rounded-lg px-3 py-2 ${
+                      validationErrors.productCategories ? 'border-red-500' : 'border-gray-300'
+                    }`}>
                       <div className="flex flex-wrap gap-2">
                         {productSelected
                           .filter((t) => !t.isDeleted)
@@ -1054,6 +1253,9 @@ export default function AddManageCategoriesPage() {
                       </div>
                     )}
                   </div>
+                  {validationErrors.productCategories && (
+                    <p className="text-red-500 text-xs mt-1">{validationErrors.productCategories}</p>
+                  )}
                 </div>
 
                 {/* Quick Select Hashtags */}
@@ -1140,8 +1342,7 @@ export default function AddManageCategoriesPage() {
               disabled={productSelected.filter((t) => !t.isDeleted).length === 0}
               className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-900 text-white text-sm font-semibold hover:bg-black disabled:opacity-50"
             >
-              <Save className="w-4 h-4" />
-                      Save & Next
+              Next
                     </button>
                 </div>
               </div>
@@ -1165,10 +1366,12 @@ export default function AddManageCategoriesPage() {
                         <div className="text-sm font-medium text-gray-700">Product Category: {productTag.name}</div>
                       </div>
 
-                      <div className="mb-4">
-                        <div className="text-sm font-semibold text-gray-900 mb-2">Add Item Category</div>
-                        <div className="relative autocomplete-container">
-                          <div className="border border-gray-300 rounded-lg px-3 py-2">
+                        <div className="mb-4">
+                          <div className="text-sm font-semibold text-gray-900 mb-2">Add Item Category <span className="text-red-500">*</span></div>
+                          <div className="relative autocomplete-container">
+                            <div className={`border rounded-lg px-3 py-2 ${
+                              validationErrors.itemCategories[productId] ? 'border-red-500' : 'border-gray-300'
+                            }`}>
                             <div className="flex flex-wrap gap-2">
                               {itemSelected
                                 .filter((t) => !t.isDeleted)
@@ -1255,6 +1458,9 @@ export default function AddManageCategoriesPage() {
                             </div>
                           )}
                         </div>
+                        {validationErrors.itemCategories[productId] && (
+                          <p className="text-red-500 text-xs mt-1">{validationErrors.itemCategories[productId]}</p>
+                        )}
                       </div>
 
                       <div className="flex items-center gap-2">
@@ -1314,9 +1520,11 @@ export default function AddManageCategoriesPage() {
                         </div>
 
                         <div className="mb-4">
-                          <div className="text-sm font-semibold text-gray-900 mb-2">Add Sub-Category</div>
+                          <div className="text-sm font-semibold text-gray-900 mb-2">Add Sub-Category <span className="text-red-500">*</span></div>
                           <div className="relative autocomplete-container">
-                            <div className="border border-gray-300 rounded-lg px-3 py-2">
+                            <div className={`border rounded-lg px-3 py-2 ${
+                              validationErrors.subCategories[key] ? 'border-red-500' : 'border-gray-300'
+                            }`}>
                               <div className="flex flex-wrap gap-2">
                                 {subSelected
                                   .filter((t) => !t.isDeleted)
@@ -1403,6 +1611,9 @@ export default function AddManageCategoriesPage() {
                               </div>
                             )}
                           </div>
+                          {validationErrors.subCategories[key] && (
+                            <p className="text-red-500 text-xs mt-1">{validationErrors.subCategories[key]}</p>
+                          )}
                         </div>
 
                         <div className="flex items-center gap-2">
