@@ -199,7 +199,6 @@ export default function AddManageCategoriesPage() {
 
   const productInputRef = useRef<HTMLInputElement>(null);
   const pendingNavStateRef = useRef<any>((location as any).state || null);
-  const wizardContainerRef = useRef<HTMLDivElement>(null);
   
   // Autocomplete dropdown states
   const [showProductSuggestions, setShowProductSuggestions] = useState(false);
@@ -514,15 +513,6 @@ export default function AddManageCategoriesPage() {
     }
     
     setStep(2);
-    // Scroll to next step horizontally (wizard style)
-    setTimeout(() => {
-      if (wizardContainerRef.current) {
-        wizardContainerRef.current.scrollTo({
-          left: wizardContainerRef.current.clientWidth,
-          behavior: 'smooth'
-        });
-      }
-    }, 100);
   };
 
   const goNextFromItem = async () => {
@@ -582,15 +572,6 @@ export default function AddManageCategoriesPage() {
     }
     
     setStep(3);
-    // Scroll to next step horizontally (wizard style)
-    setTimeout(() => {
-      if (wizardContainerRef.current) {
-        wizardContainerRef.current.scrollTo({
-          left: wizardContainerRef.current.clientWidth * 2,
-          behavior: 'smooth'
-        });
-      }
-    }, 100);
   };
 
   // Item category functions - per product
@@ -1038,11 +1019,6 @@ export default function AddManageCategoriesPage() {
 
   return (
     <div className="p-8 space-y-10 w-full animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <style>{`
-        .wizard-scroll-container::-webkit-scrollbar {
-          display: none;
-        }
-      `}</style>
       {/* Unsaved Changes Warning Dialog */}
       {showUnsavedWarning && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -1134,20 +1110,12 @@ export default function AddManageCategoriesPage() {
           )}
         </div>
 
-        {/* Wizard Container - Horizontal Scrolling */}
-        <div 
-          ref={wizardContainerRef}
-          className="wizard-scroll-container overflow-x-auto overflow-y-hidden scroll-smooth snap-x snap-mandatory"
-          style={{ 
-            scrollbarWidth: 'none',
-            msOverflowStyle: 'none',
-            WebkitOverflowScrolling: 'touch'
-          }}
-        >
-          <div className="flex" style={{ width: '300%' }}>
-            {/* Step 1: Product Category */}
-            <div className="flex-shrink-0 w-full snap-center" style={{ width: '33.333%' }}>
-              <div className="bg-white border border-gray-200 rounded-xl p-5 mb-4 mr-4">
+        {/* Wizard Container - Vertical Layout (No Horizontal Scrolling) */}
+        <div className="space-y-6">
+          {/* Step 1: Product Category */}
+          {step === 1 && (
+            <div className="w-full">
+              <div className="bg-white border border-gray-200 rounded-xl p-5">
                 <div className="flex items-center justify-between">
             <div>
               <div className="text-sm font-semibold text-gray-900">1) Product Category</div>
@@ -1347,10 +1315,12 @@ export default function AddManageCategoriesPage() {
                 </div>
               </div>
             </div>
+          )}
 
-            {/* Step 2: Item Category */}
-            <div className="flex-shrink-0 w-full snap-center" style={{ width: '33.333%' }}>
-              <div className="space-y-4 mr-4">
+          {/* Step 2: Item Category */}
+          {step === 2 && (
+            <div className="w-full">
+              <div className="space-y-4">
                 {getSelectedProducts().map((productTag) => {
                   const productId = productTag.id;
                   if (!productId) return null;
@@ -1496,8 +1466,9 @@ export default function AddManageCategoriesPage() {
               </div>
             </div>
 
-            {/* Step 3: Sub-Category */}
-            <div className="flex-shrink-0 w-full snap-center" style={{ width: '33.333%' }}>
+          {/* Step 3: Sub-Category */}
+          {step === 3 && (
+            <div className="w-full">
               <div className="space-y-4">
                 {getSelectedProducts().map((productTag) => {
                   const productId = productTag.id;
@@ -1668,7 +1639,7 @@ export default function AddManageCategoriesPage() {
                 })()}
               </div>
             </div>
-          </div>
+          )}
         </div>
     </div>
   );
