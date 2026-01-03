@@ -1465,6 +1465,7 @@ export default function AddManageCategoriesPage() {
                 </div>
               </div>
             </div>
+          )}
 
           {/* Step 3: Sub-Category */}
           {step === 3 && (
