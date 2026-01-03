@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { ChevronDown, ChevronUp, Eye, Download, Save, X } from 'lucide-react';
+import { ChevronRight, Eye, Download, Save, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { formatNumber, formatDate } from '../../utils/formatters';
 import { IncomingInventoryRecord } from './types';
@@ -394,56 +394,52 @@ const IncomingRecordRow: React.FC<IncomingRecordRowProps> = ({
 
   return (
     <>
-      <tr className="group hover:bg-slate-50/40 transition-all min-h-[56px]">
-        <td className="px-[30px] py-6 text-center">
+      <tr className="group hover:bg-gray-50 transition-all bg-white">
+        <td className="px-4 py-4 text-center">
           <button
             onClick={onToggle}
-            className="text-slate-400 hover:text-indigo-600 transition-colors"
+            className="text-gray-400 hover:text-gray-600 transition-colors"
           >
-            {isExpanded ? (
-              <ChevronUp className="w-5 h-5" />
-            ) : (
-              <ChevronDown className="w-5 h-5" />
-            )}
+            <ChevronRight className={`w-4 h-4 transition-transform ${isExpanded ? 'rotate-90' : ''}`} />
           </button>
         </td>
-        <td className="px-[30px] py-6 text-center">
-          <span className="text-[11.7px] font-medium leading-[1.4] text-slate-900">{record.invoiceNumber}</span>
+        <td className="px-4 py-4 text-center">
+          <span className="text-sm font-medium leading-normal text-gray-900">{record.invoiceNumber}</span>
         </td>
-        <td className="px-[30px] py-6 text-center">
-          <span className="text-[11.7px] font-normal leading-[1.4] text-slate-500">{formatDate(record.invoiceDate)}</span>
+        <td className="px-4 py-4 text-center">
+          <span className="text-sm font-normal leading-normal text-gray-600">{formatDate(record.invoiceDate)}</span>
         </td>
-        <td className="px-[30px] py-6 text-center">
-          <span className="text-[11.7px] font-normal leading-[1.4] text-slate-500">{formatDate(record.receivingDate)}</span>
+        <td className="px-4 py-4 text-center">
+          <span className="text-sm font-normal leading-normal text-gray-600">{formatDate(record.receivingDate)}</span>
         </td>
-        <td className="px-[30px] py-6 text-center">
-          <span className="text-[12.6px] font-semibold leading-[1.4] text-slate-900 block group-hover:text-indigo-600 transition-colors max-w-xs truncate mx-auto" title={itemName}>
+        <td className="px-4 py-4 text-center">
+          <span className="text-sm font-medium leading-normal text-gray-900 block max-w-xs truncate mx-auto" title={itemName}>
             {itemName}
           </span>
         </td>
-        <td className="px-[30px] py-6 text-center">
-          <span className="inline-block text-[11.7px] font-normal leading-[1.4] text-indigo-600 bg-indigo-50/50 px-3 py-[6px] rounded-xl border border-indigo-100/50">
+        <td className="px-4 py-4 text-center">
+          <span className="inline-block text-sm font-normal leading-normal text-purple-600 bg-purple-50 px-3 py-1 rounded-full border border-purple-100">
             {skuCode}
           </span>
         </td>
-        <td className="px-[30px] py-6 text-center">
-          <span className="text-[11.7px] font-normal leading-[1.4] text-slate-500">{record.vendorName}</span>
+        <td className="px-4 py-4 text-center">
+          <span className="text-sm font-normal leading-normal text-gray-600">{record.vendorName}</span>
         </td>
-        <td className="px-[30px] py-6 text-center">
-          <span className="text-[13.5px] font-semibold leading-[1.3] text-slate-900">
+        <td className="px-4 py-4 text-center">
+          <span className="text-sm font-semibold leading-normal text-gray-900">
           {formatNumber(itemTotalQuantity)}
           </span>
         </td>
-        <td className="px-[30px] py-6 text-center">
+        <td className="px-4 py-4 text-center">
           {isEditing ? (
             <div className="flex items-center justify-center gap-2">
               <div className="flex items-center gap-1">
-                <span className="text-[9px] font-medium text-emerald-700">Accepted:</span>
-                <span className="text-[11.7px] font-semibold text-emerald-700">{formatNumber(acceptedQuantity)}</span>
+                <span className="text-xs font-medium text-green-700">Accepted:</span>
+                <span className="text-sm font-semibold text-green-700">{formatNumber(acceptedQuantity)}</span>
               </div>
-              <span className="text-slate-400">|</span>
+              <span className="text-gray-400">|</span>
               <div className="flex items-center gap-1">
-                <span className="text-[9px] font-medium text-rose-700">Rejected:</span>
+                <span className="text-xs font-medium text-red-700">Rejected:</span>
                 <input
                   type="number"
                   min="0"
@@ -465,7 +461,7 @@ const IncomingRecordRow: React.FC<IncomingRecordRowProps> = ({
                       setEditedRejected(0);
                     }
                   }}
-                  className="w-20 px-2 py-1 text-[11.7px] border border-rose-300 rounded-lg text-rose-700 font-semibold focus:ring-2 focus:ring-rose-500 mx-auto"
+                  className="w-20 px-2 py-1 text-sm border border-red-300 rounded-lg text-red-700 font-semibold focus:ring-2 focus:ring-red-500 mx-auto"
                   title={`Max: ${itemReceived} (Received: ${itemReceived})`}
                 />
               </div>
@@ -473,13 +469,13 @@ const IncomingRecordRow: React.FC<IncomingRecordRowProps> = ({
           ) : (
             <div className="flex items-center justify-center gap-2 relative">
               <div className="flex items-center gap-1">
-                <span className="text-[13.5px] font-semibold leading-[1.3] text-emerald-700">{formatNumber(acceptedQuantity)}</span>
+                <span className="text-sm font-semibold leading-normal text-green-700">{formatNumber(acceptedQuantity)}</span>
               </div>
-              <span className="text-slate-400">|</span>
+              <span className="text-gray-400">|</span>
               <div className="flex items-center gap-1 relative" ref={rejectedDropdownRef}>
                 <button
                   onClick={handleOpenRejectedDropdown}
-                  className="text-[13.5px] font-semibold leading-[1.3] text-rose-700 hover:text-rose-800 hover:bg-rose-50 px-2 py-1 rounded-lg transition-colors cursor-pointer"
+                  className="text-sm font-semibold leading-normal text-red-700 hover:text-red-800 hover:bg-red-50 px-2 py-1 rounded-lg transition-colors cursor-pointer"
                   title="View Item Details"
                 >
                   {formatNumber(itemRejected)}
@@ -488,7 +484,7 @@ const IncomingRecordRow: React.FC<IncomingRecordRowProps> = ({
             </div>
           )}
         </td>
-        <td className="px-[30px] py-6 text-center">
+        <td className="px-4 py-4 text-center">
           {isEditing ? (
             <input
               type="number"
@@ -507,22 +503,22 @@ const IncomingRecordRow: React.FC<IncomingRecordRowProps> = ({
                   setEditedShort(0);
                 }
               }}
-              className="w-20 px-2 py-1 text-[11.7px] border border-yellow-300 rounded-lg text-yellow-700 font-semibold focus:ring-2 focus:ring-yellow-500 mx-auto"
+              className="w-20 px-2 py-1 text-sm border border-yellow-300 rounded-lg text-yellow-700 font-semibold focus:ring-2 focus:ring-yellow-500 mx-auto"
               title={`Short quantity (items not yet received). When items arrive, reduce short to update stock.`}
             />
           ) : (
-            <span className="text-[13.5px] font-semibold leading-[1.3] text-yellow-700">
+            <span className="text-sm font-semibold leading-normal text-yellow-700">
               {formatNumber(itemShort)}
             </span>
           )}
         </td>
-        <td className="px-[30px] py-6 text-center">
+        <td className="px-4 py-4 text-center">
           {isEditing ? (
             <div className="flex items-center justify-center gap-2">
               <button
                 onClick={handleSave}
                 disabled={loading}
-                className="p-2 text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors disabled:opacity-50"
+                className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors disabled:opacity-50"
                 title="Save"
               >
                 <Save className="w-4 h-4" />
@@ -530,7 +526,7 @@ const IncomingRecordRow: React.FC<IncomingRecordRowProps> = ({
               <button
                 onClick={handleCancelEdit}
                 disabled={loading}
-                className="p-2 text-rose-600 hover:bg-rose-50 rounded-lg transition-colors disabled:opacity-50"
+                className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
                 title="Cancel"
               >
                 <X className="w-4 h-4" />
@@ -540,15 +536,15 @@ const IncomingRecordRow: React.FC<IncomingRecordRowProps> = ({
             <div className="flex items-center justify-center gap-2">
               <button
                 onClick={() => onEditRejectedShort(record, item)}
-                className="p-2 text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
-                title="Edit Item"
+                className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                title="View Details"
               >
                 <Eye className="w-4 h-4" />
               </button>
               <button
                 onClick={handleDownloadInvoice}
                 disabled={downloading}
-                className="p-2 text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors disabled:opacity-50"
+                className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors disabled:opacity-50"
                 title="Download Invoice"
               >
                 <Download className="w-4 h-4" />
@@ -558,8 +554,8 @@ const IncomingRecordRow: React.FC<IncomingRecordRowProps> = ({
         </td>
       </tr>
       {isExpanded && (
-        <tr className="bg-slate-50/30">
-          <td colSpan={11} className="px-[30px] py-[18px]">
+        <tr className="bg-gray-50">
+          <td colSpan={11} className="px-4 py-4">
             <IncomingRecordItems
               record={record}
               items={[item]}

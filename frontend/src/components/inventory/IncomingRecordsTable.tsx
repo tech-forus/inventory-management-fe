@@ -172,18 +172,18 @@ const IncomingRecordsTable: React.FC<IncomingRecordsTableProps> = ({
   }, [records, recordItems, sortBy, sortOrder, search]);
 
   return (
-    <div className="bg-white rounded-[1.875rem] border border-slate-100 shadow-lg overflow-hidden">
+    <div className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
       {/* Search Bar - Only show if search prop is not provided (internal search) */}
       {searchProp === undefined && (
-        <div className="p-[18px] border-b border-slate-100">
+        <div className="p-4 border-b border-gray-200">
           <div className="relative max-w-md">
-            <Search size={15} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" />
+            <Search size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
             <input
               type="text"
               placeholder="SEARCH BY INVOICE NUMBER, ITEM NAME, SKU ID, VENDOR, BRAND..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full bg-slate-50 border border-slate-100 text-[11.7px] font-medium leading-[1.4] tracking-[0.05em] placeholder:text-[11.7px] placeholder:font-normal placeholder:tracking-[0.05em] text-slate-800 pl-9 pr-3 py-[9px] rounded-[1.125rem] focus:outline-none focus:bg-white focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/10 transition-all"
+              className="w-full bg-gray-50 border border-gray-200 text-sm font-medium leading-normal tracking-wide placeholder:text-sm placeholder:font-normal placeholder:tracking-wide text-gray-800 pl-10 pr-3 py-2 rounded-lg focus:outline-none focus:bg-white focus:border-blue-400 focus:ring-2 focus:ring-blue-500/10 transition-all"
             />
           </div>
         </div>
@@ -191,108 +191,108 @@ const IncomingRecordsTable: React.FC<IncomingRecordsTableProps> = ({
       <div className="overflow-x-auto">
         <table className="w-full text-center mx-auto">
           <thead>
-            <tr className="bg-slate-50/70 border-b border-slate-100">
-              <th className="px-[30px] py-[21px] text-[10.8px] font-semibold leading-[1.4] tracking-[0.1em] uppercase text-slate-400 text-center w-9"></th>
-              <th className="px-[30px] py-[21px] text-[10.8px] font-semibold leading-[1.4] tracking-[0.1em] uppercase text-slate-400 text-center">
-                Invoice Number
+            <tr className="bg-gray-100 border-b border-gray-200">
+              <th className="px-4 py-3 text-xs font-semibold leading-normal tracking-wide uppercase text-gray-600 text-center w-10"></th>
+              <th className="px-4 py-3 text-xs font-semibold leading-normal tracking-wide uppercase text-gray-600 text-center">
+                INVOICE NUMBER
               </th>
               <th 
-                className={`px-[30px] py-[21px] text-[10.8px] font-semibold leading-[1.4] tracking-[0.1em] uppercase text-slate-400 text-center ${
-                  onSort ? 'cursor-pointer hover:bg-slate-100 select-none' : ''
+                className={`px-4 py-3 text-xs font-semibold leading-normal tracking-wide uppercase text-gray-600 text-center ${
+                  onSort ? 'cursor-pointer hover:bg-gray-200 select-none' : ''
                 }`}
                 onClick={() => onSort && onSort('invoiceDate')}
               >
                 <div className="flex items-center justify-center gap-2">
-                  Invoice Date
+                  INVOICE DATE
                   {SortIcon && <SortIcon field="invoiceDate" />}
                 </div>
               </th>
               <th 
-                className={`px-[30px] py-[21px] text-[10.8px] font-semibold leading-[1.4] tracking-[0.1em] uppercase text-slate-400 text-center ${
-                  onSort ? 'cursor-pointer hover:bg-slate-100 select-none' : ''
+                className={`px-4 py-3 text-xs font-semibold leading-normal tracking-wide uppercase text-gray-600 text-center ${
+                  onSort ? 'cursor-pointer hover:bg-gray-200 select-none' : ''
                 }`}
                 onClick={() => onSort && onSort('receivingDate')}
               >
                 <div className="flex items-center justify-center gap-2">
-                  Receiving Date
+                  RECEIVING DATE
                   {SortIcon && <SortIcon field="receivingDate" />}
                 </div>
               </th>
               <th 
-                className={`px-[30px] py-[21px] text-[10.8px] font-semibold leading-[1.4] tracking-[0.1em] uppercase text-slate-400 text-center ${
-                  onSort ? 'cursor-pointer hover:bg-slate-100 select-none' : ''
+                className={`px-4 py-3 text-xs font-semibold leading-normal tracking-wide uppercase text-gray-600 text-center ${
+                  onSort ? 'cursor-pointer hover:bg-gray-200 select-none' : ''
                 }`}
                 onClick={() => onSort && onSort('itemName')}
               >
                 <div className="flex items-center justify-center gap-2">
-                  Item Name
+                  ITEM NAME
                   {SortIcon && <SortIcon field="itemName" />}
                 </div>
               </th>
-              <th className="px-[30px] py-[21px] text-[10.8px] font-semibold leading-[1.4] tracking-[0.1em] uppercase text-slate-400 text-center">
+              <th className="px-4 py-3 text-xs font-semibold leading-normal tracking-wide uppercase text-gray-600 text-center">
                 SKU ID
               </th>
               <th 
-                className={`px-[30px] py-[21px] text-[10.8px] font-semibold leading-[1.4] tracking-[0.1em] uppercase text-slate-400 text-center ${
-                  onSort ? 'cursor-pointer hover:bg-slate-100 select-none' : ''
+                className={`px-4 py-3 text-xs font-semibold leading-normal tracking-wide uppercase text-gray-600 text-center ${
+                  onSort ? 'cursor-pointer hover:bg-gray-200 select-none' : ''
                 }`}
                 onClick={() => onSort && onSort('vendor')}
               >
                 <div className="flex items-center justify-center gap-2">
-                  Vendor
+                  VENDOR
                   {SortIcon && <SortIcon field="vendor" />}
                 </div>
               </th>
               <th 
-                className={`px-[30px] py-[21px] text-[10.8px] font-semibold leading-[1.4] tracking-[0.1em] uppercase text-slate-400 text-center ${
-                  onSort ? 'cursor-pointer hover:bg-slate-100 select-none' : ''
+                className={`px-4 py-3 text-xs font-semibold leading-normal tracking-wide uppercase text-gray-600 text-center ${
+                  onSort ? 'cursor-pointer hover:bg-gray-200 select-none' : ''
                 }`}
                 onClick={() => onSort && onSort('totalQuantity')}
               >
                 <div className="flex items-center justify-center gap-2">
-                  Total Quantity
+                  TOTAL QUANTITY
                   {SortIcon && <SortIcon field="totalQuantity" />}
                 </div>
               </th>
               <th 
-                className={`px-[30px] py-[21px] text-[10.8px] font-semibold leading-[1.4] tracking-[0.1em] uppercase text-slate-400 text-center ${
-                  onSort ? 'cursor-pointer hover:bg-slate-100 select-none' : ''
+                className={`px-4 py-3 text-xs font-semibold leading-normal tracking-wide uppercase text-gray-600 text-center ${
+                  onSort ? 'cursor-pointer hover:bg-gray-200 select-none' : ''
                 }`}
                 onClick={() => onSort && onSort('available')}
               >
                 <div className="flex items-center justify-center gap-2">
-                  Available | Rejected
+                  AVAILABLE | REJECTED
                   {SortIcon && <SortIcon field="available" />}
                 </div>
               </th>
               <th 
-                className={`px-[30px] py-[21px] text-[10.8px] font-semibold leading-[1.4] tracking-[0.1em] uppercase text-slate-400 text-center ${
-                  onSort ? 'cursor-pointer hover:bg-slate-100 select-none' : ''
+                className={`px-4 py-3 text-xs font-semibold leading-normal tracking-wide uppercase text-gray-600 text-center ${
+                  onSort ? 'cursor-pointer hover:bg-gray-200 select-none' : ''
                 }`}
                 onClick={() => onSort && onSort('short')}
               >
                 <div className="flex items-center justify-center gap-2">
-                  Short
+                  SHORT
                   {SortIcon && <SortIcon field="short" />}
                 </div>
               </th>
-              <th className="px-[30px] py-[21px] text-[10.8px] font-semibold leading-[1.4] tracking-[0.1em] uppercase text-slate-400 text-center">
-                Action
+              <th className="px-4 py-3 text-xs font-semibold leading-normal tracking-wide uppercase text-gray-600 text-center">
+                ACTIONS
               </th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-100">
+          <tbody className="divide-y divide-gray-200">
             {loading ? (
               <tr>
                 <td colSpan={11} className="px-10 py-12 text-center">
                   <div className="flex justify-center">
-                    <div className="w-8 h-8 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
+                    <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
                   </div>
                 </td>
               </tr>
             ) : flattenedItems.length === 0 ? (
               <tr>
-                <td colSpan={11} className="px-10 py-12 text-center text-slate-500 font-medium">
+                <td colSpan={11} className="px-10 py-12 text-center text-gray-500 font-medium">
                   No incoming inventory records found
                 </td>
               </tr>
