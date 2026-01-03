@@ -904,13 +904,31 @@ const CategoryMasterTab: React.FC<CategoryMasterTabProps> = ({
                       <div className="flex items-center justify-center gap-2">
                         <button
                           onClick={() => {
-                            if (row.type === 'product' && row.productCategoryId) {
-                              handleOpenDialog('product', row);
-                            } else if (row.type === 'item' && row.itemCategoryId) {
-                              handleOpenDialog('item', row);
-                            } else if (row.type === 'sub' && row.subCategoryId) {
-                              handleOpenDialog('sub', row);
+                            // Navigate to manage page with category data for editing
+                            const navState: any = {
+                              fromCategoryMaster: true,
+                              editMode: true,
+                            };
+
+                            // Always include product category if available
+                            if (row.productCategoryId && row.productCategory && row.productCategory !== '—') {
+                              navState.productCategoryId = row.productCategoryId;
+                              navState.productCategoryName = row.productCategory;
                             }
+
+                            // Include item category if available
+                            if (row.itemCategoryId && row.itemCategory && row.itemCategory !== '—') {
+                              navState.itemCategoryId = row.itemCategoryId;
+                              navState.itemCategoryName = row.itemCategory;
+                            }
+
+                            // Include sub category if available
+                            if (row.subCategoryId && row.subCategory && row.subCategory !== '—') {
+                              navState.subCategoryId = row.subCategoryId;
+                              navState.subCategoryName = row.subCategory;
+                            }
+
+                            navigate('/app/library/categories/manage', { state: navState });
                           }}
                           className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                           title="Edit"
