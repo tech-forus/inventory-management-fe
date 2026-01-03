@@ -9,9 +9,10 @@ interface InventoryRowProps {
   isExpanded: boolean;
   onToggle: () => void;
   onDelete?: () => void;
+  onPriceHistoryClick?: (skuId: string) => void;
 }
 
-const InventoryRow: React.FC<InventoryRowProps> = ({ item, isExpanded, onToggle, onDelete }) => {
+const InventoryRow: React.FC<InventoryRowProps> = ({ item, isExpanded, onToggle, onDelete, onPriceHistoryClick }) => {
   const navigate = useNavigate();
 
   const getStockColor = (current: number, min: number): string => {
@@ -25,9 +26,19 @@ const InventoryRow: React.FC<InventoryRowProps> = ({ item, isExpanded, onToggle,
     <>
       <tr className="group hover:bg-slate-50/40 transition-all min-h-[56px]">
         <td className="px-3 py-6 text-center">
-          <span className="inline-block text-[11.7px] font-normal leading-[1.4] text-indigo-600 bg-indigo-50/50 px-3 py-[6px] rounded-xl border border-indigo-100/50">
-            {item.skuId}
-          </span>
+          {onPriceHistoryClick && item.skuId ? (
+            <button
+              onClick={() => onPriceHistoryClick(item.skuId)}
+              className="inline-block text-[11.7px] font-normal leading-[1.4] text-indigo-600 bg-indigo-50/50 px-3 py-[6px] rounded-xl border border-indigo-100/50 hover:bg-indigo-100/70 hover:border-indigo-200 transition-colors cursor-pointer"
+              title="View buying price history"
+            >
+              {item.skuId}
+            </button>
+          ) : (
+            <span className="inline-block text-[11.7px] font-normal leading-[1.4] text-indigo-600 bg-indigo-50/50 px-3 py-[6px] rounded-xl border border-indigo-100/50">
+              {item.skuId}
+            </span>
+          )}
         </td>
         <td className="px-3 py-6 text-center">
           <span className="text-[11.7px] font-normal leading-[1.4] text-slate-500">{item.productCategory}</span>

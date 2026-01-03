@@ -25,6 +25,7 @@ import ReceiveFromVendorModal from '../components/inventory/rejectedItemReports/
 import ScrapModal from '../components/inventory/rejectedItemReports/modals/ScrapModal';
 import HistoryModal from '../components/inventory/rejectedItemReports/modals/HistoryModal';
 import ReceiveBackModal from '../components/inventory/shortItemReports/modals/ReceiveBackModal';
+import PriceHistoryModal from '../components/inventory/incomingInventory/PriceHistoryModal';
 
 const InventoryPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'all' | 'incoming' | 'outgoing' | 'rejected' | 'short'>('all');
@@ -165,6 +166,19 @@ const InventoryPage: React.FC = () => {
     invoiceChallan: '',
     addToStock: true,
     receivedBy: '',
+  });
+
+  // Price history modal state
+  const [priceHistoryModal, setPriceHistoryModal] = useState<{
+    isOpen: boolean;
+    skuId: string;
+    loading: boolean;
+    data: any;
+  }>({
+    isOpen: false,
+    skuId: '',
+    loading: false,
+    data: null,
   });
 
   useEffect(() => {
@@ -1359,6 +1373,31 @@ const InventoryPage: React.FC = () => {
     alert('History view functionality to be implemented');
   };
 
+  // Handle price history click
+  const handlePriceHistoryClick = async (skuId: string) => {
+    setPriceHistoryModal({
+      isOpen: true,
+      skuId: skuId,
+      loading: true,
+      data: null,
+    });
+    try {
+      const response = await inventoryService.getPriceHistory(skuId);
+      setPriceHistoryModal(prev => ({
+        ...prev,
+        loading: false,
+        data: response.data,
+      }));
+    } catch (error) {
+      console.error('Error loading price history:', error);
+      setPriceHistoryModal(prev => ({
+        ...prev,
+        loading: false,
+        data: null,
+      }));
+    }
+  };
+
   const handleExportPDF = async () => {
     setShowExportDropdown(false);
     try {
@@ -1585,6 +1624,7 @@ const InventoryPage: React.FC = () => {
             sortOrder={sortOrder}
             onSort={handleSort}
             SortIcon={SortIcon}
+            onPriceHistoryClick={handlePriceHistoryClick}
           />
         </>
       )}
@@ -1851,6 +1891,14 @@ const InventoryPage: React.FC = () => {
           setEditFormData(prev => ({ ...prev, ...data }));
         }}
         onUpdate={handleUpdateRejectedShort}
+      />
+
+      {/* Price History Modal */}
+      <PriceHistoryModal
+        isOpen={priceHistoryModal.isOpen}
+        loading={priceHistoryModal.loading}
+        data={priceHistoryModal.data}
+        onClose={() => setPriceHistoryModal({ isOpen: false, skuId: '', loading: false, data: null })}
       />
     </div>
   );

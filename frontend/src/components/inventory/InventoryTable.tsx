@@ -12,6 +12,7 @@ interface InventoryTableProps {
   sortOrder?: 'asc' | 'desc';
   onSort?: (field: string) => void;
   SortIcon?: ({ field }: { field: string }) => React.ReactNode;
+  onPriceHistoryClick?: (skuId: string) => void;
 }
 
 const InventoryTable: React.FC<InventoryTableProps> = ({
@@ -24,6 +25,7 @@ const InventoryTable: React.FC<InventoryTableProps> = ({
   sortOrder,
   onSort,
   SortIcon,
+  onPriceHistoryClick,
 }) => {
   return (
     <div className="bg-white rounded-[1.875rem] border border-slate-100 shadow-lg overflow-hidden">
@@ -145,6 +147,7 @@ const InventoryTable: React.FC<InventoryTableProps> = ({
                   isExpanded={expandedRows.has(item.id)}
                   onToggle={() => onToggleRow(item.id)}
                   onDelete={onDeleteItem ? () => onDeleteItem(item.id) : undefined}
+                  onPriceHistoryClick={onPriceHistoryClick}
                 />
               ))
             )}
