@@ -1470,10 +1470,10 @@ const InventoryPage: React.FC = () => {
   };
 
   return (
-    <div className="p-6 space-y-7 w-full animate-in fade-in slide-in-from-bottom-4 duration-500">
+    <div className="p-4 space-y-3 w-full animate-in fade-in slide-in-from-bottom-4 duration-500">
       {/* Header Section */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div className="space-y-1.5">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+        <div className="space-y-0.5">
           <h1 className="text-[21.6px] font-semibold leading-[1.2] tracking-[-0.01em] text-slate-900">Inventory</h1>
           <p className="text-[12.6px] font-normal leading-[1.5] text-slate-500">Comprehensive inventory tracking and management system.</p>
         </div>
@@ -1667,8 +1667,8 @@ const InventoryPage: React.FC = () => {
 
       {activeTab === 'rejected' && (
         <>
-          <div className="bg-white rounded-lg shadow p-4">
-            <div className="flex items-center gap-4 mb-4">
+          <div className="bg-white rounded-lg shadow p-3">
+            <div className="flex items-center gap-3 mb-2">
               <input
                 type="text"
                 placeholder="Search by report number, SKU, item name, or invoice number..."
@@ -1709,8 +1709,8 @@ const InventoryPage: React.FC = () => {
 
       {activeTab === 'short' && (
         <>
-          <div className="bg-white rounded-lg shadow p-4">
-            <div className="flex items-center gap-4 mb-4">
+          <div className="bg-white rounded-lg shadow p-3">
+            <div className="flex items-center gap-3 mb-2">
               <input
                 type="text"
                 placeholder="Search by invoice number, SKU, or item name..."
