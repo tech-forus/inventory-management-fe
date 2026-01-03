@@ -442,25 +442,25 @@ const CategoryMasterTab: React.FC<CategoryMasterTabProps> = ({
         <div className="flex flex-wrap gap-2">
           <button
             onClick={() => handleOpenWizard()}
-            className="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2 text-sm"
+            className="px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2 text-base"
             title="Add new category using wizard"
           >
-            <Plus className="w-4 h-4" />
+            <Plus className="w-5 h-5" />
             Add Category
           </button>
           <button
             onClick={handleDownloadTemplate}
-            className="px-3 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 flex items-center gap-2 text-sm"
+            className="px-4 py-2.5 bg-gray-500 text-white rounded-lg hover:bg-gray-600 flex items-center gap-2 text-base"
             title="Download unified Excel template with all category types"
           >
-            <Download className="w-4 h-4" />
+            <Download className="w-5 h-5" />
             Download Template
           </button>
           <button
             onClick={handleFileSelect}
-            className="px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center gap-2 text-sm"
+            className="px-4 py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center gap-2 text-base"
           >
-            <Upload className="w-4 h-4" />
+            <Upload className="w-5 h-5" />
             Upload Excel
           </button>
           <input
