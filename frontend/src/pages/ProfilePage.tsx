@@ -101,19 +101,9 @@ const ProfilePage: React.FC = () => {
   };
 
   const handleInputChange = (field: keyof ProfileData, value: string | boolean) => {
-    let processedValue = value;
-    
-    // Phone number: Only allow digits 0-9, max 10 digits
-    if (field === 'phone' && typeof value === 'string') {
-      processedValue = value.replace(/[^0-9]/g, '');
-      if (processedValue.length > 10) {
-        processedValue = processedValue.substring(0, 10);
-      }
-    }
-    
     setProfileData(prev => ({
       ...prev,
-      [field]: processedValue
+      [field]: value
     }));
     setHasChanges(true);
   };
@@ -264,8 +254,6 @@ const ProfilePage: React.FC = () => {
                   type="tel"
                   value={profileData.phone}
                   onChange={(e) => handleInputChange('phone', e.target.value)}
-                  maxLength={10}
-                  inputMode="numeric"
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
               </div>

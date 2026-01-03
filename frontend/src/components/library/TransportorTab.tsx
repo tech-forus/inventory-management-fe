@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { Plus, Search, Edit, Trash2, X, Upload, Download, Eye } from 'lucide-react';
+import { Plus, Search, Edit, Trash2, X, Upload, Download } from 'lucide-react';
 import { libraryService } from '../../services/libraryService';
 import { validateRequired, validateEmail, validatePhone, validateGST } from '../../utils/validators';
 import * as XLSX from 'xlsx';
@@ -7,10 +7,9 @@ import * as XLSX from 'xlsx';
 interface Transportor {
   id: number;
   name: string;
-  subVendor?: string;
+  subVendor: string;
   contactPerson?: string;
   contactNumber?: string;
-  whatsappNumber?: string;
   email?: string;
   gstNumber?: string;
   isActive: boolean;
@@ -27,7 +26,6 @@ const TransportorTab: React.FC<TransportorTabProps> = ({ transportors, loading, 
   const [search, setSearch] = useState('');
   const [showDialog, setShowDialog] = useState(false);
   const [editingTransportor, setEditingTransportor] = useState<Transportor | null>(null);
-  const [viewingTransportor, setViewingTransportor] = useState<Transportor | null>(null);
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -37,13 +35,11 @@ const TransportorTab: React.FC<TransportorTabProps> = ({ transportors, loading, 
     subVendor: '',
     contactPerson: '',
     contactNumber: '',
-    whatsappNumber: '',
     email: '',
     gstNumber: '',
     isActive: true,
     remarks: '',
   });
-  const [sameAsContactNumber, setSameAsContactNumber] = useState(false);
 
   const filteredTransportors = transportors.filter((transportor) => {
     const searchLower = search.toLowerCase();
@@ -52,7 +48,6 @@ const TransportorTab: React.FC<TransportorTabProps> = ({ transportors, loading, 
       transportor.subVendor?.toLowerCase().includes(searchLower) ||
       transportor.contactPerson?.toLowerCase().includes(searchLower) ||
       transportor.contactNumber?.toLowerCase().includes(searchLower) ||
-      transportor.whatsappNumber?.toLowerCase().includes(searchLower) ||
       transportor.email?.toLowerCase().includes(searchLower) ||
       transportor.gstNumber?.toLowerCase().includes(searchLower)
     );
@@ -61,20 +56,16 @@ const TransportorTab: React.FC<TransportorTabProps> = ({ transportors, loading, 
   const handleOpenDialog = (transportor?: Transportor) => {
     if (transportor) {
       setEditingTransportor(transportor);
-      const contactNumber = transportor.contactNumber || '';
-      const whatsappNumber = transportor.whatsappNumber || '';
       setTransportorForm({
         name: transportor.name || '',
         subVendor: transportor.subVendor || '',
         contactPerson: transportor.contactPerson || '',
-        contactNumber: contactNumber,
-        whatsappNumber: whatsappNumber,
+        contactNumber: transportor.contactNumber || '',
         email: transportor.email || '',
         gstNumber: transportor.gstNumber || '',
         isActive: transportor.isActive !== false,
         remarks: transportor.remarks || '',
       });
-      setSameAsContactNumber(contactNumber && whatsappNumber === contactNumber);
     } else {
       setEditingTransportor(null);
       setTransportorForm({
@@ -82,13 +73,11 @@ const TransportorTab: React.FC<TransportorTabProps> = ({ transportors, loading, 
         subVendor: '',
         contactPerson: '',
         contactNumber: '',
-        whatsappNumber: '',
         email: '',
         gstNumber: '',
         isActive: true,
         remarks: '',
       });
-      setSameAsContactNumber(false);
     }
     setErrors({});
     setShowDialog(true);
@@ -105,6 +94,9 @@ const TransportorTab: React.FC<TransportorTabProps> = ({ transportors, loading, 
 
     if (!validateRequired(transportorForm.name || '')) {
       newErrors.name = 'Transporter Name is required';
+    }
+    if (!validateRequired(transportorForm.subVendor || '')) {
+      newErrors.subVendor = 'Sub Vendor is required';
     }
     if (!validateRequired(transportorForm.contactPerson || '')) {
       newErrors.contactPerson = 'Contact Person Name is required';
@@ -126,10 +118,6 @@ const TransportorTab: React.FC<TransportorTabProps> = ({ transportors, loading, 
       newErrors.contactNumber = 'Invalid phone number (10 digits)';
     }
 
-    if (transportorForm.whatsappNumber && !validatePhone(transportorForm.whatsappNumber)) {
-      newErrors.whatsappNumber = 'Invalid WhatsApp number (10 digits)';
-    }
-
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
       return;
@@ -137,26 +125,10 @@ const TransportorTab: React.FC<TransportorTabProps> = ({ transportors, loading, 
 
     try {
       setSaving(true);
-      // If "same as contact number" is checked, use contact number as WhatsApp number
-      const whatsappNumberValue = sameAsContactNumber && transportorForm.contactNumber
-        ? transportorForm.contactNumber.trim()
-        : (transportorForm.whatsappNumber && transportorForm.whatsappNumber.trim() 
-            ? transportorForm.whatsappNumber.trim() 
-            : null);
-      
-      // Prepare the payload, ensuring whatsappNumber is included
-      const payload = {
-        ...transportorForm,
-        whatsappNumber: whatsappNumberValue,
-        subVendor: transportorForm.subVendor && transportorForm.subVendor.trim() 
-          ? transportorForm.subVendor.trim() 
-          : null,
-      };
-      
       if (editingTransportor) {
-        await libraryService.updateTransportor(editingTransportor.id, payload);
+        await libraryService.updateTransportor(editingTransportor.id, transportorForm);
       } else {
-        await libraryService.createTransportor(payload);
+        await libraryService.createTransportor(transportorForm);
       }
       handleCloseDialog();
       onRefresh();
@@ -188,7 +160,6 @@ const TransportorTab: React.FC<TransportorTabProps> = ({ transportors, loading, 
         'Sub Vendor': '',
         'Contact Person Name': '',
         'Contact Number': '',
-        'WhatsApp Number': '',
         'Email ID': '',
         'GST Number': '',
         'Status': 'Active',
@@ -305,14 +276,14 @@ const TransportorTab: React.FC<TransportorTabProps> = ({ transportors, loading, 
             <table className="w-full">
               <thead className="bg-gray-50 border-b border-gray-200">
                 <tr>
-                  <th className="px-3 py-2 text-center text-xs font-semibold text-gray-700 uppercase">Transporter Name</th>
-                  <th className="px-3 py-2 text-center text-xs font-semibold text-gray-700 uppercase">Sub Vendor</th>
-                  <th className="px-3 py-2 text-center text-xs font-semibold text-gray-700 uppercase">Contact Person</th>
-                  <th className="px-3 py-2 text-center text-xs font-semibold text-gray-700 uppercase">Contact Number</th>
-                  <th className="px-3 py-2 text-center text-xs font-semibold text-gray-700 uppercase">Email</th>
-                  <th className="px-3 py-2 text-center text-xs font-semibold text-gray-700 uppercase">GST Number</th>
-                  <th className="px-3 py-2 text-center text-xs font-semibold text-gray-700 uppercase">Status</th>
-                  <th className="px-3 py-2 text-center text-xs font-semibold text-gray-700 uppercase">Actions</th>
+                  <th className="px-3 py-2 text-left text-xs font-semibold text-gray-700 uppercase">Transporter Name</th>
+                  <th className="px-3 py-2 text-left text-xs font-semibold text-gray-700 uppercase">Sub Vendor</th>
+                  <th className="px-3 py-2 text-left text-xs font-semibold text-gray-700 uppercase">Contact Person</th>
+                  <th className="px-3 py-2 text-left text-xs font-semibold text-gray-700 uppercase">Contact Number</th>
+                  <th className="px-3 py-2 text-left text-xs font-semibold text-gray-700 uppercase">Email</th>
+                  <th className="px-3 py-2 text-left text-xs font-semibold text-gray-700 uppercase">GST Number</th>
+                  <th className="px-3 py-2 text-left text-xs font-semibold text-gray-700 uppercase">Status</th>
+                  <th className="px-3 py-2 text-left text-xs font-semibold text-gray-700 uppercase">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
@@ -323,28 +294,21 @@ const TransportorTab: React.FC<TransportorTabProps> = ({ transportors, loading, 
                 ) : (
                   filteredTransportors.map((transportor) => (
                     <tr key={transportor.id} className="hover:bg-gray-50">
-                      <td className="px-3 py-2 text-xs font-medium text-gray-900 text-center">{transportor.name}</td>
-                      <td className="px-3 py-2 text-xs text-gray-700 text-center">{transportor.subVendor || '-'}</td>
-                      <td className="px-3 py-2 text-xs text-gray-700 text-center">{transportor.contactPerson || '-'}</td>
-                      <td className="px-3 py-2 text-xs text-gray-700 text-center">{transportor.contactNumber || '-'}</td>
-                      <td className="px-3 py-2 text-xs text-gray-700 text-center">{transportor.email || '-'}</td>
-                      <td className="px-3 py-2 text-xs text-gray-700 text-center">{transportor.gstNumber || '-'}</td>
-                      <td className="px-3 py-2 text-xs text-center">
+                      <td className="px-3 py-2 text-xs font-medium text-gray-900">{transportor.name}</td>
+                      <td className="px-3 py-2 text-xs text-gray-700">{transportor.subVendor || '-'}</td>
+                      <td className="px-3 py-2 text-xs text-gray-700">{transportor.contactPerson || '-'}</td>
+                      <td className="px-3 py-2 text-xs text-gray-700">{transportor.contactNumber || '-'}</td>
+                      <td className="px-3 py-2 text-xs text-gray-700">{transportor.email || '-'}</td>
+                      <td className="px-3 py-2 text-xs text-gray-700">{transportor.gstNumber || '-'}</td>
+                      <td className="px-3 py-2 text-xs">
                         <span className={`px-2 py-1 text-xs font-semibold rounded ${
                           transportor.isActive ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
                         }`}>
                           {transportor.isActive ? 'Active' : 'Inactive'}
                         </span>
                       </td>
-                      <td className="px-3 py-2 text-xs text-center">
-                        <div className="flex items-center justify-center gap-2">
-                          <button
-                            onClick={() => setViewingTransportor(transportor)}
-                            className="p-2 text-green-600 hover:bg-green-50 rounded-lg"
-                            title="View Details"
-                          >
-                            <Eye className="w-4 h-4" />
-                          </button>
+                      <td className="px-3 py-2 text-xs">
+                        <div className="flex items-center gap-2">
                           <button
                             onClick={() => handleOpenDialog(transportor)}
                             className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg"
@@ -403,14 +367,17 @@ const TransportorTab: React.FC<TransportorTabProps> = ({ transportors, loading, 
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Sub Vendor
+                    Sub Vendor <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text"
                     value={transportorForm.subVendor}
                     onChange={(e) => setTransportorForm({ ...transportorForm, subVendor: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${
+                      errors.subVendor ? 'border-red-500' : 'border-gray-300'
+                    }`}
                   />
+                  {errors.subVendor && <p className="text-red-500 text-xs mt-1">{errors.subVendor}</p>}
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -426,93 +393,35 @@ const TransportorTab: React.FC<TransportorTabProps> = ({ transportors, loading, 
                   />
                   {errors.contactPerson && <p className="text-red-500 text-xs mt-1">{errors.contactPerson}</p>}
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Contact Number <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    value={transportorForm.contactNumber}
-                    onChange={(e) => {
-                      // Only allow digits 0-9, max 10 digits
-                      let contactNumber = e.target.value.replace(/[^0-9]/g, '');
-                      if (contactNumber.length > 10) {
-                        contactNumber = contactNumber.substring(0, 10);
-                      }
-                      const updatedForm = { ...transportorForm, contactNumber };
-                      // If "same as contact number" is checked, update WhatsApp number too
-                      if (sameAsContactNumber) {
-                        updatedForm.whatsappNumber = contactNumber;
-                      }
-                      setTransportorForm(updatedForm);
-                    }}
-                    maxLength={10}
-                    inputMode="numeric"
-                    className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${
-                      errors.contactNumber ? 'border-red-500' : 'border-gray-300'
-                    }`}
-                  />
-                  {errors.contactNumber && <p className="text-red-500 text-xs mt-1">{errors.contactNumber}</p>}
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    WhatsApp Number
-                  </label>
-                  <input
-                    type="text"
-                    value={transportorForm.whatsappNumber}
-                    onChange={(e) => {
-                      // Only allow digits 0-9, max 10 digits
-                      let whatsappNumber = e.target.value.replace(/[^0-9]/g, '');
-                      if (whatsappNumber.length > 10) {
-                        whatsappNumber = whatsappNumber.substring(0, 10);
-                      }
-                      setTransportorForm({ ...transportorForm, whatsappNumber });
-                      // Uncheck "same as contact number" if user manually edits
-                      if (sameAsContactNumber && whatsappNumber !== transportorForm.contactNumber) {
-                        setSameAsContactNumber(false);
-                      }
-                    }}
-                    maxLength={10}
-                    inputMode="numeric"
-                    disabled={sameAsContactNumber}
-                    className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${
-                      errors.whatsappNumber ? 'border-red-500' : 'border-gray-300'
-                    } ${sameAsContactNumber ? 'bg-gray-100 cursor-not-allowed' : ''}`}
-                  />
-                  {errors.whatsappNumber && <p className="text-red-500 text-xs mt-1">{errors.whatsappNumber}</p>}
-                  <div className="flex items-center mt-2">
-                    <input
-                      type="checkbox"
-                      id="sameAsContactNumber"
-                      checked={sameAsContactNumber}
-                      onChange={(e) => {
-                        const checked = e.target.checked;
-                        setSameAsContactNumber(checked);
-                        if (checked) {
-                          setTransportorForm({ ...transportorForm, whatsappNumber: transportorForm.contactNumber || '' });
-                        }
-                      }}
-                      className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                    />
-                    <label htmlFor="sameAsContactNumber" className="ml-2 text-sm text-gray-700">
-                      Same as Contact Number
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Contact Number <span className="text-red-500">*</span>
                     </label>
+                    <input
+                      type="text"
+                      value={transportorForm.contactNumber}
+                      onChange={(e) => setTransportorForm({ ...transportorForm, contactNumber: e.target.value })}
+                      className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${
+                        errors.contactNumber ? 'border-red-500' : 'border-gray-300'
+                      }`}
+                    />
+                    {errors.contactNumber && <p className="text-red-500 text-xs mt-1">{errors.contactNumber}</p>}
                   </div>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Email ID <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="email"
-                    value={transportorForm.email}
-                    onChange={(e) => setTransportorForm({ ...transportorForm, email: e.target.value })}
-                    className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${
-                      errors.email ? 'border-red-500' : 'border-gray-300'
-                    }`}
-                  />
-                  {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email}</p>}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Email ID <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="email"
+                      value={transportorForm.email}
+                      onChange={(e) => setTransportorForm({ ...transportorForm, email: e.target.value })}
+                      className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${
+                        errors.email ? 'border-red-500' : 'border-gray-300'
+                      }`}
+                    />
+                    {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email}</p>}
+                  </div>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -563,77 +472,6 @@ const TransportorTab: React.FC<TransportorTabProps> = ({ transportors, loading, 
                   className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
                 >
                   {saving ? 'Saving...' : editingTransportor ? 'Update' : 'Save'}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* View Details Modal */}
-      {viewingTransportor && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-xl max-w-3xl w-full mx-4 max-h-[90vh] overflow-y-auto">
-            <div className="p-6">
-              <div className="flex justify-between items-center mb-8">
-                <h2 className="text-[24px] font-semibold text-gray-900">Transporter Details</h2>
-                <button
-                  onClick={() => setViewingTransportor(null)}
-                  className="text-gray-400 hover:text-gray-600 transition-colors"
-                >
-                  <X className="w-6 h-6" />
-                </button>
-              </div>
-              <div className="grid grid-cols-2 gap-6">
-                <div className="mb-5">
-                  <label className="block text-[13px] font-semibold text-gray-500 uppercase tracking-wider mb-2">Transporter Name</label>
-                  <p className="text-[16px] font-medium text-gray-900 pb-2 border-b border-gray-200">{viewingTransportor.name}</p>
-                </div>
-                <div className="mb-5">
-                  <label className="block text-[13px] font-semibold text-gray-500 uppercase tracking-wider mb-2">Sub Vendor</label>
-                  <p className="text-[16px] font-medium text-gray-900 pb-2 border-b border-gray-200">{viewingTransportor.subVendor || '-'}</p>
-                </div>
-                <div className="mb-5">
-                  <label className="block text-[13px] font-semibold text-gray-500 uppercase tracking-wider mb-2">Contact Person Name</label>
-                  <p className="text-[16px] font-medium text-gray-900 pb-2 border-b border-gray-200">{viewingTransportor.contactPerson || '-'}</p>
-                </div>
-                <div className="mb-5">
-                  <label className="block text-[13px] font-semibold text-gray-500 uppercase tracking-wider mb-2">Contact Number</label>
-                  <p className="text-[16px] font-medium text-gray-900 pb-2 border-b border-gray-200">{viewingTransportor.contactNumber || '-'}</p>
-                </div>
-                <div className="mb-5">
-                  <label className="block text-[13px] font-semibold text-gray-500 uppercase tracking-wider mb-2">WhatsApp Number</label>
-                  <p className="text-[16px] font-medium text-gray-900 pb-2 border-b border-gray-200">{viewingTransportor.whatsappNumber || '-'}</p>
-                </div>
-                <div className="mb-5">
-                  <label className="block text-[13px] font-semibold text-gray-500 uppercase tracking-wider mb-2">Email ID</label>
-                  <p className="text-[16px] font-medium text-gray-900 pb-2 border-b border-gray-200">{viewingTransportor.email || '-'}</p>
-                </div>
-                <div className="mb-5">
-                  <label className="block text-[13px] font-semibold text-gray-500 uppercase tracking-wider mb-2">GST Number</label>
-                  <p className="text-[16px] font-medium text-gray-900 pb-2 border-b border-gray-200">{viewingTransportor.gstNumber || '-'}</p>
-                </div>
-                <div className="mb-5">
-                  <label className="block text-[13px] font-semibold text-gray-500 uppercase tracking-wider mb-2">Status</label>
-                  <p className="pb-2 border-b border-gray-200">
-                    <span className={`text-[13px] font-semibold px-[10px] py-1.5 rounded-full ${
-                      viewingTransportor.isActive ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
-                    }`}>
-                      {viewingTransportor.isActive ? 'Active' : 'Inactive'}
-                    </span>
-                  </p>
-                </div>
-                <div className="col-span-2 mb-5">
-                  <label className="block text-[13px] font-semibold text-gray-500 uppercase tracking-wider mb-2">Remarks</label>
-                  <p className="text-[16px] font-medium text-gray-900 pb-2 border-b border-gray-200">{viewingTransportor.remarks || '-'}</p>
-                </div>
-              </div>
-              <div className="flex justify-end gap-3 mt-6">
-                <button
-                  onClick={() => setViewingTransportor(null)}
-                  className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
-                >
-                  Close
                 </button>
               </div>
             </div>

@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Edit, Trash2, Plus, Upload, Download, Eye, X } from 'lucide-react';
+import { Search, Edit, Trash2, Plus, Upload, Download } from 'lucide-react';
 import { skuService } from '../../services/skuService';
 import { formatNumber } from '../../utils/formatters';
 import * as XLSX from 'xlsx';
@@ -34,7 +34,6 @@ const ProductsTab: React.FC<ProductsTabProps> = ({ products, loading, onRefresh 
   const [search, setSearch] = useState('');
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
-  const [viewingProduct, setViewingProduct] = useState<Product | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleDelete = async (id: number) => {
@@ -326,16 +325,16 @@ const ProductsTab: React.FC<ProductsTabProps> = ({ products, loading, onRefresh 
               <table className="w-full">
                 <thead className="bg-gray-50 border-b border-gray-200">
                   <tr>
-                    <th className="px-4 py-3 text-center text-xs font-semibold text-gray-700 uppercase">SKU ID</th>
-                    <th className="px-4 py-3 text-center text-xs font-semibold text-gray-700 uppercase">Item Name</th>
-                    <th className="px-4 py-3 text-center text-xs font-semibold text-gray-700 uppercase">Product Category</th>
-                    <th className="px-4 py-3 text-center text-xs font-semibold text-gray-700 uppercase">Item Category</th>
-                    <th className="px-4 py-3 text-center text-xs font-semibold text-gray-700 uppercase">Brand</th>
-                    <th className="px-4 py-3 text-center text-xs font-semibold text-gray-700 uppercase">Vendor</th>
-                    <th className="px-4 py-3 text-center text-xs font-semibold text-gray-700 uppercase">Model</th>
-                    <th className="px-4 py-3 text-center text-xs font-semibold text-gray-700 uppercase">HSN Code</th>
-                    <th className="px-4 py-3 text-center text-xs font-semibold text-gray-700 uppercase">Current Stock</th>
-                    <th className="px-4 py-3 text-center text-xs font-semibold text-gray-700 uppercase">Actions</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">SKU ID</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Item Name</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Product Category</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Item Category</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Brand</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Vendor</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Model</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">HSN Code</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Current Stock</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200">
@@ -347,24 +346,17 @@ const ProductsTab: React.FC<ProductsTabProps> = ({ products, loading, onRefresh 
                     filteredProducts.map((product) => {
                       return (
                         <tr key={product.id} className="hover:bg-gray-50">
-                          <td className="px-4 py-3 text-sm font-medium text-gray-900 text-center">{product.skuId}</td>
-                          <td className="px-4 py-3 text-sm text-gray-700 text-center">{product.itemName}</td>
-                          <td className="px-4 py-3 text-sm text-gray-700 text-center">{product.productCategory || '-'}</td>
-                          <td className="px-4 py-3 text-sm text-gray-700 text-center">{product.itemCategory || '-'}</td>
-                          <td className="px-4 py-3 text-sm text-gray-700 text-center">{product.brand || '-'}</td>
-                          <td className="px-4 py-3 text-sm text-gray-700 text-center">{product.vendor || '-'}</td>
-                          <td className="px-4 py-3 text-sm text-gray-700 text-center">{product.model || '-'}</td>
-                          <td className="px-4 py-3 text-sm text-gray-700 text-center">{product.hsnSacCode || '-'}</td>
-                          <td className="px-4 py-3 text-sm text-gray-700 text-center">{formatNumber(product.currentStock || 0)}</td>
-                          <td className="px-4 py-3 text-sm text-center">
-                            <div className="flex items-center justify-center gap-2">
-                              <button
-                                onClick={() => setViewingProduct(product)}
-                                className="p-2 text-green-600 hover:bg-green-50 rounded-lg"
-                                title="View Details"
-                              >
-                                <Eye className="w-4 h-4" />
-                              </button>
+                          <td className="px-4 py-3 text-sm font-medium text-gray-900">{product.skuId}</td>
+                          <td className="px-4 py-3 text-sm text-gray-700">{product.itemName}</td>
+                          <td className="px-4 py-3 text-sm text-gray-700">{product.productCategory || '-'}</td>
+                          <td className="px-4 py-3 text-sm text-gray-700">{product.itemCategory || '-'}</td>
+                          <td className="px-4 py-3 text-sm text-gray-700">{product.brand || '-'}</td>
+                          <td className="px-4 py-3 text-sm text-gray-700">{product.vendor || '-'}</td>
+                          <td className="px-4 py-3 text-sm text-gray-700">{product.model || '-'}</td>
+                          <td className="px-4 py-3 text-sm text-gray-700">{product.hsnSacCode || '-'}</td>
+                          <td className="px-4 py-3 text-sm text-gray-700">{formatNumber(product.currentStock || 0)}</td>
+                          <td className="px-4 py-3 text-sm">
+                            <div className="flex items-center gap-2">
                               <button
                                 onClick={() => window.location.href = `/app/sku/${product.id}`}
                                 className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg"
@@ -391,91 +383,6 @@ const ProductsTab: React.FC<ProductsTabProps> = ({ products, loading, onRefresh 
           </div>
         )}
       </div>
-
-      {/* View Details Modal */}
-      {viewingProduct && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-xl max-w-3xl w-full mx-4 max-h-[90vh] overflow-y-auto">
-            <div className="p-6">
-              <div className="flex justify-between items-center mb-8">
-                <h2 className="text-[24px] font-semibold text-gray-900">Product Details</h2>
-                <button
-                  onClick={() => setViewingProduct(null)}
-                  className="text-gray-400 hover:text-gray-600 transition-colors"
-                >
-                  <X className="w-6 h-6" />
-                </button>
-              </div>
-              <div className="grid grid-cols-2 gap-6">
-                <div className="mb-5">
-                  <label className="block text-[13px] font-semibold text-gray-500 uppercase tracking-wider mb-2">SKU ID</label>
-                  <p className="text-[16px] font-medium text-gray-900 pb-2 border-b border-gray-200">{viewingProduct.skuId}</p>
-                </div>
-                <div className="mb-5">
-                  <label className="block text-[13px] font-semibold text-gray-500 uppercase tracking-wider mb-2">Item Name</label>
-                  <p className="text-[16px] font-medium text-gray-900 pb-2 border-b border-gray-200">{viewingProduct.itemName}</p>
-                </div>
-                <div className="mb-5">
-                  <label className="block text-[13px] font-semibold text-gray-500 uppercase tracking-wider mb-2">Product Category</label>
-                  <p className="text-[16px] font-medium text-gray-900 pb-2 border-b border-gray-200">{viewingProduct.productCategory || '-'}</p>
-                </div>
-                <div className="mb-5">
-                  <label className="block text-[13px] font-semibold text-gray-500 uppercase tracking-wider mb-2">Item Category</label>
-                  <p className="text-[16px] font-medium text-gray-900 pb-2 border-b border-gray-200">{viewingProduct.itemCategory || '-'}</p>
-                </div>
-                <div className="mb-5">
-                  <label className="block text-[13px] font-semibold text-gray-500 uppercase tracking-wider mb-2">Sub Category</label>
-                  <p className="text-[16px] font-medium text-gray-900 pb-2 border-b border-gray-200">{viewingProduct.subCategory || '-'}</p>
-                </div>
-                <div className="mb-5">
-                  <label className="block text-[13px] font-semibold text-gray-500 uppercase tracking-wider mb-2">Brand</label>
-                  <p className="text-[16px] font-medium text-gray-900 pb-2 border-b border-gray-200">{viewingProduct.brand || '-'}</p>
-                </div>
-                <div className="mb-5">
-                  <label className="block text-[13px] font-semibold text-gray-500 uppercase tracking-wider mb-2">Vendor</label>
-                  <p className="text-[16px] font-medium text-gray-900 pb-2 border-b border-gray-200">{viewingProduct.vendor || '-'}</p>
-                </div>
-                <div className="mb-5">
-                  <label className="block text-[13px] font-semibold text-gray-500 uppercase tracking-wider mb-2">Model</label>
-                  <p className="text-[16px] font-medium text-gray-900 pb-2 border-b border-gray-200">{viewingProduct.model || '-'}</p>
-                </div>
-                <div className="mb-5">
-                  <label className="block text-[13px] font-semibold text-gray-500 uppercase tracking-wider mb-2">HSN/SAC Code</label>
-                  <p className="text-[16px] font-medium text-gray-900 pb-2 border-b border-gray-200">{viewingProduct.hsnSacCode || '-'}</p>
-                </div>
-                <div className="mb-5">
-                  <label className="block text-[13px] font-semibold text-gray-500 uppercase tracking-wider mb-2">Rating/Size</label>
-                  <p className="text-[16px] font-medium text-gray-900 pb-2 border-b border-gray-200">{viewingProduct.ratingSize || '-'}</p>
-                </div>
-                <div className="mb-5">
-                  <label className="block text-[13px] font-semibold text-gray-500 uppercase tracking-wider mb-2">Series</label>
-                  <p className="text-[16px] font-medium text-gray-900 pb-2 border-b border-gray-200">{viewingProduct.series || '-'}</p>
-                </div>
-                <div className="mb-5">
-                  <label className="block text-[13px] font-semibold text-gray-500 uppercase tracking-wider mb-2">Unit</label>
-                  <p className="text-[16px] font-medium text-gray-900 pb-2 border-b border-gray-200">{viewingProduct.unit || '-'}</p>
-                </div>
-                <div className="mb-5">
-                  <label className="block text-[13px] font-semibold text-gray-500 uppercase tracking-wider mb-2">Current Stock</label>
-                  <p className="text-[16px] font-medium text-gray-900 pb-2 border-b border-gray-200">{formatNumber(viewingProduct.currentStock || 0)}</p>
-                </div>
-                <div className="mb-5">
-                  <label className="block text-[13px] font-semibold text-gray-500 uppercase tracking-wider mb-2">Minimum Stock</label>
-                  <p className="text-[16px] font-medium text-gray-900 pb-2 border-b border-gray-200">{formatNumber(viewingProduct.minStock || 0)}</p>
-                </div>
-              </div>
-              <div className="flex justify-end gap-3 mt-6">
-                <button
-                  onClick={() => setViewingProduct(null)}
-                  className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
-                >
-                  Close
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </>
   );
 };

@@ -79,7 +79,9 @@ const InviteUserPage: React.FC = () => {
     if (!validateRequired(inviteForm.firstName)) {
       newErrors.firstName = 'First Name is required';
     }
-    // Last Name is optional - no validation needed
+    if (!validateRequired(inviteForm.lastName)) {
+      newErrors.lastName = 'Last Name is required';
+    }
     if (!validateRequired(inviteForm.role)) {
       newErrors.role = 'Role is required';
     }
@@ -531,7 +533,7 @@ const InviteUserPage: React.FC = () => {
               
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Last Name
+                  Last Name <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
@@ -546,7 +548,7 @@ const InviteUserPage: React.FC = () => {
                   className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
                     errors.lastName ? 'border-red-500' : 'border-gray-300'
                   } ${selectedTeamId ? 'bg-gray-100 cursor-not-allowed' : ''}`}
-                  placeholder="Doe (optional)"
+                  placeholder="Doe"
                 />
                 {errors.lastName && <p className="text-red-500 text-xs mt-1">{errors.lastName}</p>}
               </div>

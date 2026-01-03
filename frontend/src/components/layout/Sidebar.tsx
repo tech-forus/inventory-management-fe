@@ -180,13 +180,6 @@ const Sidebar: React.FC = () => {
             icon: LayoutDashboard,
             path: '/app/dashboard',
           },
-          {
-            id: 'library',
-            label: 'LIBRARY',
-            icon: Library,
-            path: '/app/library',
-            roles: ['admin', 'super_admin'],
-          },
         ],
       },
       {
@@ -205,6 +198,13 @@ const Sidebar: React.FC = () => {
             icon: Warehouse,
             path: '/app/inventory',
             permission: 'inventory.view',
+            roles: ['admin', 'super_admin'],
+          },
+          {
+            id: 'library',
+            label: 'LIBRARY',
+            icon: Library,
+            path: '/app/library',
             roles: ['admin', 'super_admin'],
           },
           {
