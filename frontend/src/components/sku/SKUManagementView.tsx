@@ -106,7 +106,7 @@ interface SKUManagementViewProps {
 }
 
 const SKUManagementView: React.FC<SKUManagementViewProps> = ({
-  title = 'SKU Management',
+  title = 'SKUManagement',
   description = 'Detailed tracking and administration of global product identifiers.',
   search,
   onSearchChange,
