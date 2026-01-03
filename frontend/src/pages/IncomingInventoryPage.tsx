@@ -717,7 +717,7 @@ const IncomingInventoryPage: React.FC = () => {
   };
 
   return (
-    <div className="p-8 space-y-10 w-full animate-in fade-in slide-in-from-bottom-4 duration-500">
+    <div className="p-6 space-y-6 w-full animate-in fade-in slide-in-from-bottom-4 duration-500">
       <style>{`
         input[type="number"]::-webkit-inner-spin-button,
         input[type="number"]::-webkit-outer-spin-button {
@@ -729,27 +729,27 @@ const IncomingInventoryPage: React.FC = () => {
         }
       `}</style>
       {/* Header Section */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
-        <div className="space-y-2">
-      <div className="flex items-center gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="space-y-1">
+      <div className="flex items-center gap-3">
         <button
           onClick={() => navigate('/app/inventory')}
               className="text-slate-600 hover:text-indigo-600 transition-colors"
         >
-          <ArrowLeft className="w-6 h-6" />
+          <ArrowLeft className="w-5 h-5" />
         </button>
-            <h1 className="text-[28.8px] font-semibold leading-[1.2] tracking-[-0.01em] text-slate-900">Incoming Inventory</h1>
+            <h1 className="text-xl font-semibold leading-[1.2] tracking-[-0.01em] text-slate-900">Incoming Inventory</h1>
           </div>
-          <p className="text-[16.8px] font-normal leading-[1.5] text-slate-500">Record and manage incoming stock from vendors and suppliers.</p>
+          <p className="text-sm font-normal leading-[1.5] text-slate-500">Record and manage incoming stock from vendors and suppliers.</p>
         </div>
       </div>
 
       {/* Tabs */}
-      <div className="bg-white rounded-[2.5rem] border border-slate-100 shadow-sm p-2">
-        <nav className="flex space-x-2">
+      <div className="bg-white rounded-[2.5rem] border border-slate-100 shadow-sm p-1.5">
+        <nav className="flex space-x-1.5">
           <button
             onClick={() => setActiveTab('add')}
-            className={`px-6 py-3 rounded-2xl font-black text-[15.6px] uppercase tracking-wider transition-all ${
+            className={`px-4 py-2 rounded-xl font-black text-xs uppercase tracking-wider transition-all ${
               activeTab === 'add'
                 ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/20'
                 : 'text-slate-500 hover:bg-slate-50'
@@ -759,7 +759,7 @@ const IncomingInventoryPage: React.FC = () => {
           </button>
           <button
             onClick={() => setActiveTab('history')}
-            className={`px-6 py-3 rounded-2xl font-black text-[15.6px] uppercase tracking-wider transition-all ${
+            className={`px-4 py-2 rounded-xl font-black text-xs uppercase tracking-wider transition-all ${
               activeTab === 'history'
                 ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/20'
                 : 'text-slate-500 hover:bg-slate-50'
