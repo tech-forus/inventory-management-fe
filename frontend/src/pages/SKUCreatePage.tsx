@@ -5,6 +5,8 @@ import { skuService } from '../services/skuService';
 import { libraryService } from '../services/libraryService';
 import { validateRequired } from '../utils/validators';
 import { onCategoriesUpdated } from '../utils/categoriesEvents';
+import VendorFormModal from '../components/library/VendorFormModal';
+import BrandFormModal from '../components/library/BrandFormModal';
 
 interface FormData {
   skuId: string;
@@ -88,6 +90,8 @@ const SKUCreatePage: React.FC = () => {
   const [vendors, setVendors] = useState<any[]>([]);
   const [brands, setBrands] = useState<any[]>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [showVendorModal, setShowVendorModal] = useState(false);
+  const [showBrandModal, setShowBrandModal] = useState(false);
 
   useEffect(() => {
     loadInitialData();
@@ -496,7 +500,7 @@ const SKUCreatePage: React.FC = () => {
                 </select>
                 <button
                   type="button"
-                  onClick={() => navigate('/app/library?tab=vendors')}
+                  onClick={() => setShowVendorModal(true)}
                   className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
                 >
                   <Plus className="w-5 h-5" />
@@ -545,7 +549,7 @@ const SKUCreatePage: React.FC = () => {
                 </select>
                 <button
                   type="button"
-                  onClick={() => navigate('/app/library?tab=brands')}
+                  onClick={() => setShowBrandModal(true)}
                   className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
                 >
                   <Plus className="w-5 h-5" />
@@ -927,6 +931,40 @@ const SKUCreatePage: React.FC = () => {
           </button>
         </div>
       </form>
+
+      {/* Vendor Form Modal */}
+      <VendorFormModal
+        isOpen={showVendorModal}
+        onClose={() => setShowVendorModal(false)}
+        onSave={async (vendorId: number) => {
+          // Refresh vendors list
+          try {
+            const vendorsData = await libraryService.getVendors();
+            setVendors(vendorsData.data || []);
+            // Auto-select the newly created vendor
+            handleChange('vendorId', vendorId.toString());
+          } catch (error) {
+            console.error('Error refreshing vendors:', error);
+          }
+        }}
+      />
+
+      {/* Brand Form Modal */}
+      <BrandFormModal
+        isOpen={showBrandModal}
+        onClose={() => setShowBrandModal(false)}
+        onSave={async (brandId: number) => {
+          // Refresh brands list
+          try {
+            const brandsData = await libraryService.getBrands();
+            setBrands(brandsData.data || []);
+            // Auto-select the newly created brand
+            handleChange('brandId', brandId.toString());
+          } catch (error) {
+            console.error('Error refreshing brands:', error);
+          }
+        }}
+      />
     </div>
   );
 };
