@@ -1,14 +1,24 @@
 import React from 'react';
+import { Plus } from 'lucide-react';
 import { IncomingInventoryFormData } from './types';
+
+interface Transportor {
+  id: number;
+  name: string;
+}
 
 interface InvoiceDetailsSectionProps {
   formData: IncomingInventoryFormData;
   onFormDataChange: (updates: Partial<IncomingInventoryFormData>) => void;
+  transportors?: Transportor[];
+  onAddTransportor?: () => void;
 }
 
 const InvoiceDetailsSection: React.FC<InvoiceDetailsSectionProps> = ({
   formData,
   onFormDataChange,
+  transportors = [],
+  onAddTransportor,
 }) => {
   const today = new Date().toISOString().split('T')[0];
 
@@ -59,14 +69,31 @@ const InvoiceDetailsSection: React.FC<InvoiceDetailsSectionProps> = ({
           <label className="block text-sm font-medium text-gray-700 mb-1">
             Transportor Name <span className="text-red-500">*</span>
           </label>
-          <input
-            type="text"
-            value={formData.transportorName}
-            onChange={(e) => onFormDataChange({ transportorName: e.target.value })}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-            placeholder="Enter transportor name"
-            required
-          />
+          <div className="flex items-center gap-2">
+            <select
+              value={formData.transportorName}
+              onChange={(e) => onFormDataChange({ transportorName: e.target.value })}
+              className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              required
+            >
+              <option value="">Select Transportor</option>
+              {transportors.map((transportor) => (
+                <option key={transportor.id} value={transportor.name}>
+                  {transportor.name}
+                </option>
+              ))}
+            </select>
+            {onAddTransportor && (
+              <button
+                type="button"
+                onClick={onAddTransportor}
+                className="text-blue-600 hover:text-blue-700 flex items-center gap-1 text-sm font-medium px-3 py-2 border border-blue-600 rounded-lg hover:bg-blue-50 transition-colors"
+                title="Add new transporter"
+              >
+                <Plus className="w-4 h-4" /> Add New
+              </button>
+            )}
+          </div>
         </div>
       </div>
     </div>

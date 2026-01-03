@@ -14,6 +14,7 @@ import ActionButtons from '../components/inventory/incomingInventory/ActionButto
 import HistoryFilters from '../components/inventory/incomingInventory/HistoryFilters';
 import HistoryTable from '../components/inventory/incomingInventory/HistoryTable';
 import PriceHistoryModal from '../components/inventory/incomingInventory/PriceHistoryModal';
+import TransportorFormModal from '../components/library/TransportorFormModal';
 
 const IncomingInventoryPage: React.FC = () => {
   const navigate = useNavigate();
@@ -66,7 +67,9 @@ const IncomingInventoryPage: React.FC = () => {
   const [customers, setCustomers] = useState<any[]>([]);
   const [brands, setBrands] = useState<any[]>([]);
   const [teams, setTeams] = useState<any[]>([]);
+  const [transportors, setTransportors] = useState<any[]>([]);
   const [skus, setSkus] = useState<any[]>([]);
+  const [showTransportorModal, setShowTransportorModal] = useState(false);
   const [history, setHistory] = useState<any[]>([]);
   const [expandedRows, setExpandedRows] = useState<{ [key: number]: boolean }>({});
   const [rowItems, setRowItems] = useState<{ [key: number]: any[] }>({});
@@ -206,11 +209,12 @@ const IncomingInventoryPage: React.FC = () => {
 
   const loadInitialData = async () => {
     try {
-      const [vendorsData, customersData, brandsData, teamsData, skusData] = await Promise.all([
+      const [vendorsData, customersData, brandsData, teamsData, transportorsData, skusData] = await Promise.all([
         libraryService.getYourVendors(),
         libraryService.getCustomers(),
         libraryService.getYourBrands(),
         libraryService.getTeams(),
+        libraryService.getTransportors(),
         skuService.getAll({ limit: 1000 }),
       ]);
       // Handle both response structures: direct array or { data: [...] }
@@ -218,9 +222,22 @@ const IncomingInventoryPage: React.FC = () => {
       setCustomers(Array.isArray(customersData) ? customersData : (customersData?.data || []));
       setBrands(Array.isArray(brandsData) ? brandsData : (brandsData?.data || []));
       setTeams(Array.isArray(teamsData) ? teamsData : (teamsData?.data || []));
+      setTransportors(Array.isArray(transportorsData) ? transportorsData : (transportorsData?.data || []));
       setSkus(Array.isArray(skusData) ? skusData : (skusData?.data || []));
     } catch (error) {
       console.error('Error loading initial data:', error);
+    }
+  };
+
+  const loadTransportors = async () => {
+    try {
+      const transportorsData = await libraryService.getTransportors();
+      const transportorsList = Array.isArray(transportorsData) ? transportorsData : (transportorsData?.data || []);
+      setTransportors(transportorsList);
+      return transportorsList;
+    } catch (error) {
+      console.error('Error loading transportors:', error);
+      return [];
     }
   };
 
@@ -766,6 +783,8 @@ const IncomingInventoryPage: React.FC = () => {
           <InvoiceDetailsSection
             formData={formData}
             onFormDataChange={(updates) => setFormData(prev => ({ ...prev, ...updates }))}
+            transportors={transportors}
+            onAddTransportor={() => setShowTransportorModal(true)}
           />
 
           <ReceivingDetailsSection
@@ -838,6 +857,22 @@ const IncomingInventoryPage: React.FC = () => {
         loading={priceHistoryModal.loading}
         data={priceHistoryModal.data}
         onClose={() => setPriceHistoryModal({ isOpen: false, skuId: '', loading: false, data: null })}
+      />
+
+      <TransportorFormModal
+        isOpen={showTransportorModal}
+        onClose={() => setShowTransportorModal(false)}
+        onSave={async (transportorId) => {
+          const updatedTransportors = await loadTransportors(); // Refresh transportors list
+          // Auto-select the newly created transporter
+          if (transportorId > 0) {
+            const newTransportor = updatedTransportors.find((t: any) => t.id === transportorId);
+            if (newTransportor) {
+              setFormData(prev => ({ ...prev, transportorName: newTransportor.name }));
+            }
+          }
+          setShowTransportorModal(false);
+        }}
       />
     </div>
   );
