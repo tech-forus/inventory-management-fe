@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { ArrowUp, ArrowDown } from 'lucide-react';
 import { inventoryService } from '../services/inventoryService';
 import { libraryService } from '../services/libraryService';
@@ -16,9 +16,18 @@ import EditRejectedShortModal from '../components/inventory/EditRejectedShortMod
 import { IncomingInventoryItem, OutgoingInventoryItem } from '../components/inventory/types';
 import { onCategoriesUpdated } from '../utils/categoriesEvents';
 import { onInventoryUpdated } from '../utils/inventoryEvents';
+import { RejectedItemReport, ActionFormData } from '../components/inventory/rejectedItemReports/types';
+import { ShortItemReport, ShortItemActionFormData } from '../components/inventory/shortItemReports/types';
+import RejectedItemReportTable from '../components/inventory/rejectedItemReports/RejectedItemReportTable';
+import ShortItemReportTable from '../components/inventory/shortItemReports/ShortItemReportTable';
+import SendToVendorModal from '../components/inventory/rejectedItemReports/modals/SendToVendorModal';
+import ReceiveFromVendorModal from '../components/inventory/rejectedItemReports/modals/ReceiveFromVendorModal';
+import ScrapModal from '../components/inventory/rejectedItemReports/modals/ScrapModal';
+import HistoryModal from '../components/inventory/rejectedItemReports/modals/HistoryModal';
+import ReceiveBackModal from '../components/inventory/shortItemReports/modals/ReceiveBackModal';
 
 const InventoryPage: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'all' | 'incoming' | 'outgoing'>('all');
+  const [activeTab, setActiveTab] = useState<'all' | 'incoming' | 'outgoing' | 'rejected' | 'short'>('all');
   const [loading, setLoading] = useState(false);
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
   const [incomingRecords, setIncomingRecords] = useState<IncomingInventoryRecord[]>([]);
@@ -60,6 +69,7 @@ const InventoryPage: React.FC = () => {
   const [brands, setBrands] = useState<any[]>([]);
   const [vendors, setVendors] = useState<any[]>([]);
   const [customers, setCustomers] = useState<any[]>([]);
+  const [teams, setTeams] = useState<any[]>([]);
 
   // Incoming inventory filters
   const [incomingSearch, setIncomingSearch] = useState('');
@@ -91,6 +101,72 @@ const InventoryPage: React.FC = () => {
   });
   const [updating, setUpdating] = useState(false);
 
+  // Rejected items state
+  const [rejectedItemReports, setRejectedItemReports] = useState<RejectedItemReport[]>([]);
+  const [filteredRejectedReports, setFilteredRejectedReports] = useState<RejectedItemReport[]>([]);
+  const [rejectedLoading, setRejectedLoading] = useState(false);
+  const [openRejectedDropdownId, setOpenRejectedDropdownId] = useState<number | null>(null);
+  const rejectedDropdownRefs = useRef<{ [key: number]: HTMLDivElement | null }>({});
+  const [rejectedSearch, setRejectedSearch] = useState('');
+  const [rejectedDateFrom, setRejectedDateFrom] = useState('');
+  const [rejectedDateTo, setRejectedDateTo] = useState('');
+
+  // Short items state
+  const [shortItemReports, setShortItemReports] = useState<ShortItemReport[]>([]);
+  const [filteredShortReports, setFilteredShortReports] = useState<ShortItemReport[]>([]);
+  const [shortLoading, setShortLoading] = useState(false);
+  const [openShortDropdownId, setOpenShortDropdownId] = useState<number | null>(null);
+  const shortDropdownRefs = useRef<{ [key: number]: HTMLDivElement | null }>({});
+  const [shortSearch, setShortSearch] = useState('');
+  const [shortDateFrom, setShortDateFrom] = useState('');
+  const [shortDateTo, setShortDateTo] = useState('');
+
+  // Rejected items modals
+  const [sendToVendorModal, setSendToVendorModal] = useState<RejectedItemReport | null>(null);
+  const [receiveFromVendorModal, setReceiveFromVendorModal] = useState<RejectedItemReport | null>(null);
+  const [scrapModal, setScrapModal] = useState<RejectedItemReport | null>(null);
+  const [historyModal, setHistoryModal] = useState<RejectedItemReport | null>(null);
+
+  // Short items modals
+  const [receiveBackModal, setReceiveBackModal] = useState<ShortItemReport | null>(null);
+
+  // Form states for rejected items actions
+  const [actionFormData, setActionFormData] = useState<ActionFormData>({
+    quantity: 0,
+    remarks: '',
+    vendorId: '',
+    brandId: '',
+    date: new Date().toISOString().split('T')[0],
+    docketTracking: '',
+    transporter: '',
+    reason: '',
+    condition: 'replaced',
+    invoiceChallan: '',
+    addToStock: true,
+    scrapReason: 'beyond-repair',
+    scrapReasonOther: '',
+    approvedBy: '',
+    unitPrice: undefined,
+    shortItem: undefined,
+  });
+  const [processing, setProcessing] = useState(false);
+
+  // Short item form data
+  const [shortItemFormData, setShortItemFormData] = useState<ShortItemActionFormData>({
+    quantity: 0,
+    remarks: '',
+    vendorId: '',
+    brandId: '',
+    date: new Date().toISOString().split('T')[0],
+    docketTracking: '',
+    transporter: '',
+    reason: '',
+    condition: 'replaced',
+    invoiceChallan: '',
+    addToStock: true,
+    receivedBy: '',
+  });
+
   useEffect(() => {
     loadInitialData();
   }, []);
@@ -111,6 +187,10 @@ const InventoryPage: React.FC = () => {
         loadIncomingRecords();
       } else if (activeTab === 'outgoing') {
         loadOutgoingRecords();
+      } else if (activeTab === 'rejected') {
+        loadRejectedItemReports();
+      } else if (activeTab === 'short') {
+        loadShortItemReports();
       }
     });
   }, [activeTab]);
@@ -139,8 +219,12 @@ const InventoryPage: React.FC = () => {
       loadIncomingRecords();
     } else if (activeTab === 'outgoing') {
       loadOutgoingRecords();
+    } else if (activeTab === 'rejected') {
+      loadRejectedItemReports();
+    } else if (activeTab === 'short') {
+      loadShortItemReports();
     }
-  }, [activeTab, search, productCategory, itemCategory, subCategory, brand, stockStatus, datePreset, customDateFrom, customDateTo, sortBy, sortOrder, incomingDatePreset, incomingCustomDateFrom, incomingCustomDateTo, incomingFilterVendor, incomingFilterStatus, outgoingDatePreset, outgoingCustomDateFrom, outgoingCustomDateTo, outgoingFilterDestination, outgoingFilterStatus]);
+  }, [activeTab, search, productCategory, itemCategory, subCategory, brand, stockStatus, datePreset, customDateFrom, customDateTo, sortBy, sortOrder, incomingDatePreset, incomingCustomDateFrom, incomingCustomDateTo, incomingFilterVendor, incomingFilterStatus, outgoingDatePreset, outgoingCustomDateFrom, outgoingCustomDateTo, outgoingFilterDestination, outgoingFilterStatus, rejectedSearch, rejectedDateFrom, rejectedDateTo, shortSearch, shortDateFrom, shortDateTo]);
 
   useEffect(() => {
     if (productCategory) {
@@ -164,16 +248,18 @@ const InventoryPage: React.FC = () => {
 
   const loadInitialData = async () => {
     try {
-      const [productCats, brandsData, vendorsData, customersData] = await Promise.all([
+      const [productCats, brandsData, vendorsData, customersData, teamsData] = await Promise.all([
         libraryService.getYourProductCategories(),
         libraryService.getBrands(),
         libraryService.getYourVendors(),
         libraryService.getCustomers(),
+        libraryService.getTeams(),
       ]);
       setProductCategories(productCats.data || []);
       setBrands(brandsData.data || []);
       setVendors(vendorsData.data || []);
       setCustomers(customersData.data || []);
+      setTeams(teamsData.data || []);
     } catch (error) {
       console.error('Error loading initial data:', error);
     }
@@ -524,6 +610,104 @@ const InventoryPage: React.FC = () => {
     }
   };
 
+  // Load rejected item reports
+  const loadRejectedItemReports = useCallback(async () => {
+    try {
+      setRejectedLoading(true);
+      const params: any = {};
+      if (rejectedDateFrom) params.dateFrom = rejectedDateFrom;
+      if (rejectedDateTo) params.dateTo = rejectedDateTo;
+      if (rejectedSearch) params.search = rejectedSearch;
+
+      const response = await inventoryService.getRejectedItemReports(params);
+      if (response.success) {
+        const reports = response.data || [];
+        setRejectedItemReports(reports);
+      }
+    } catch (error) {
+      console.error('Error loading rejected item reports:', error);
+      setRejectedItemReports([]);
+    } finally {
+      setRejectedLoading(false);
+    }
+  }, [rejectedDateFrom, rejectedDateTo, rejectedSearch]);
+
+  // Load short item reports
+  const loadShortItemReports = useCallback(async () => {
+    try {
+      setShortLoading(true);
+      const params: any = {};
+      if (shortDateFrom) params.dateFrom = shortDateFrom;
+      if (shortDateTo) params.dateTo = shortDateTo;
+      if (shortSearch) params.search = shortSearch;
+
+      const response = await inventoryService.getShortItemReports(params);
+      if (response.success) {
+        const reports = response.data || [];
+        setShortItemReports(reports);
+      }
+    } catch (error) {
+      console.error('Error loading short item reports:', error);
+      setShortItemReports([]);
+    } finally {
+      setShortLoading(false);
+    }
+  }, [shortDateFrom, shortDateTo, shortSearch]);
+
+  // Apply filters for rejected items
+  useEffect(() => {
+    let filtered = [...rejectedItemReports];
+    if (rejectedSearch) {
+      const searchLower = rejectedSearch.toLowerCase();
+      filtered = filtered.filter(
+        (report) =>
+          report.reportNumber?.toLowerCase().includes(searchLower) ||
+          report.skuCode?.toLowerCase().includes(searchLower) ||
+          report.itemName?.toLowerCase().includes(searchLower) ||
+          report.originalInvoiceNumber?.toLowerCase().includes(searchLower)
+      );
+    }
+    setFilteredRejectedReports(filtered);
+  }, [rejectedItemReports, rejectedSearch]);
+
+  // Apply filters for short items
+  useEffect(() => {
+    let filtered = [...shortItemReports];
+    if (shortSearch) {
+      const searchLower = shortSearch.toLowerCase();
+      filtered = filtered.filter(
+        (report) =>
+          report.invoiceNumber?.toLowerCase().includes(searchLower) ||
+          report.skuCode?.toLowerCase().includes(searchLower) ||
+          report.itemName?.toLowerCase().includes(searchLower)
+      );
+    }
+    setFilteredShortReports(filtered);
+  }, [shortItemReports, shortSearch]);
+
+  // Close dropdowns when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (openRejectedDropdownId !== null) {
+        const dropdown = rejectedDropdownRefs.current[openRejectedDropdownId];
+        if (dropdown && !dropdown.contains(event.target as Node)) {
+          setOpenRejectedDropdownId(null);
+        }
+      }
+      if (openShortDropdownId !== null) {
+        const dropdown = shortDropdownRefs.current[openShortDropdownId];
+        if (dropdown && !dropdown.contains(event.target as Node)) {
+          setOpenShortDropdownId(null);
+        }
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [openRejectedDropdownId, openShortDropdownId]);
+
   const toggleOutgoingRow = async (itemKey: string) => {
     const newExpanded = new Set(expandedOutgoingRows);
     if (newExpanded.has(itemKey)) {
@@ -733,6 +917,448 @@ const InventoryPage: React.FC = () => {
     await loadIncomingRecords();
   };
 
+  // Rejected items handlers
+  const toggleRejectedDropdown = (reportId: number) => {
+    setOpenRejectedDropdownId(openRejectedDropdownId === reportId ? null : reportId);
+  };
+
+  const getDefaultFormData = (): ActionFormData => ({
+    quantity: 0,
+    remarks: '',
+    vendorId: '',
+    brandId: '',
+    date: new Date().toISOString().split('T')[0],
+    docketTracking: '',
+    transporter: '',
+    reason: '',
+    condition: 'replaced',
+    invoiceChallan: '',
+    addToStock: true,
+    scrapReason: 'beyond-repair',
+    scrapReasonOther: '',
+    approvedBy: '',
+    unitPrice: undefined,
+    shortItem: undefined,
+  });
+
+  const resetFormData = () => {
+    setActionFormData(getDefaultFormData());
+  };
+
+  const handleSendToVendor = async (report: RejectedItemReport) => {
+    setOpenRejectedDropdownId(null);
+    const availableQty = report.quantity - (report.sentToVendor || 0) - (report.receivedBack || 0) - (report.scrapped || 0);
+    
+    let defaultUnitPrice: number | undefined = undefined;
+    try {
+      const skuResponse = await skuService.getById(report.skuId);
+      if (skuResponse?.success && skuResponse.data?.unitPrice) {
+        defaultUnitPrice = skuResponse.data.unitPrice;
+      }
+    } catch (error) {
+      console.warn('Could not fetch SKU unit price for default:', error);
+    }
+    
+    setActionFormData({
+      ...getDefaultFormData(),
+      quantity: Math.max(0, availableQty),
+      vendorId: report.vendorId || '',
+      brandId: report.brandId || '',
+      unitPrice: defaultUnitPrice,
+    });
+    setSendToVendorModal(report);
+  };
+
+  const handleReceiveFromVendor = (report: RejectedItemReport) => {
+    setOpenRejectedDropdownId(null);
+    const availableQty = report.sentToVendor || 0;
+    setActionFormData({
+      ...getDefaultFormData(),
+      quantity: Math.max(0, availableQty),
+      vendorId: report.vendorId || '',
+      brandId: report.brandId || '',
+      addToStock: true,
+    });
+    setReceiveFromVendorModal(report);
+  };
+
+  const handleScrap = (report: RejectedItemReport) => {
+    setOpenRejectedDropdownId(null);
+    const availableQty = report.quantity - (report.sentToVendor || 0) - (report.receivedBack || 0) - (report.scrapped || 0);
+    setActionFormData({
+      ...getDefaultFormData(),
+      quantity: Math.max(0, availableQty),
+    });
+    setScrapModal(report);
+  };
+
+  const handleViewHistory = (report: RejectedItemReport) => {
+    setOpenRejectedDropdownId(null);
+    setHistoryModal(report);
+  };
+
+  const handleFormChange = (data: Partial<ActionFormData>) => {
+    setActionFormData(prev => ({ ...prev, ...data }));
+  };
+
+  const handleSendToVendorSubmit = async () => {
+    if (!sendToVendorModal) return;
+    
+    if (!actionFormData.vendorId) {
+      alert('Please select a vendor');
+      return;
+    }
+    if (!actionFormData.brandId) {
+      alert('Please select a brand');
+      return;
+    }
+    if (!actionFormData.reason) {
+      alert('Please enter a reason');
+      return;
+    }
+    if (!actionFormData.date) {
+      alert('Please select a date');
+      return;
+    }
+    if (actionFormData.quantity <= 0) {
+      alert('Quantity must be greater than 0');
+      return;
+    }
+    if (actionFormData.quantity > (sendToVendorModal.quantity - (sendToVendorModal.sentToVendor || 0) - (sendToVendorModal.receivedBack || 0) - (sendToVendorModal.scrapped || 0))) {
+      alert('Quantity exceeds available rejected quantity');
+      return;
+    }
+    if (actionFormData.unitPrice === undefined || actionFormData.unitPrice === null || actionFormData.unitPrice < 0) {
+      alert('Please enter a valid unit price (must be 0 or greater)');
+      return;
+    }
+
+    try {
+      setProcessing(true);
+      
+      const reportNumber = sendToVendorModal.reportNumber || `REJ-${sendToVendorModal.originalInvoiceNumber}-${Date.now()}`;
+      const unitPrice = actionFormData.unitPrice > 0 ? actionFormData.unitPrice : 0.01;
+      
+      const outgoingData = {
+        documentType: 'delivery_challan',
+        documentSubType: 'replacement',
+        deliveryChallanSubType: 'to_vendor',
+        invoiceChallanDate: actionFormData.date,
+        invoiceChallanNumber: reportNumber,
+        docketNumber: actionFormData.docketTracking || '',
+        transportorName: actionFormData.transporter || '',
+        destinationType: 'vendor',
+        destinationId: parseInt(actionFormData.vendorId),
+        remarks: actionFormData.remarks || `Rejected items sent to vendor. Reason: ${actionFormData.reason}`,
+        status: 'completed',
+        items: [
+          {
+            skuId: sendToVendorModal.skuId,
+            outgoingQuantity: actionFormData.quantity,
+            unitPrice: unitPrice,
+            totalValue: unitPrice * actionFormData.quantity,
+          }
+        ]
+      };
+      
+      await inventoryService.addOutgoing(outgoingData);
+      
+      const newSentToVendor = (sendToVendorModal.sentToVendor || 0) + actionFormData.quantity;
+      const newNetRejected = Math.max(0, sendToVendorModal.quantity - newSentToVendor - (sendToVendorModal.receivedBack || 0) - (sendToVendorModal.scrapped || 0));
+      
+      await inventoryService.updateRejectedItemReport(sendToVendorModal.id, {
+        sentToVendor: newSentToVendor,
+        netRejected: newNetRejected,
+      });
+
+      await loadRejectedItemReports();
+      setSendToVendorModal(null);
+      resetFormData();
+      alert(`Items sent to vendor successfully. Report Number: ${reportNumber}`);
+    } catch (error: any) {
+      console.error('Error sending to vendor:', error);
+      alert(error.response?.data?.error || error.response?.data?.message || 'Failed to send items to vendor');
+    } finally {
+      setProcessing(false);
+    }
+  };
+
+  const handleReceiveFromVendorSubmit = async () => {
+    if (!receiveFromVendorModal) return;
+    
+    if (!actionFormData.vendorId) {
+      alert('Please select a vendor');
+      return;
+    }
+    if (!actionFormData.brandId) {
+      alert('Please select a brand');
+      return;
+    }
+    if (!actionFormData.date) {
+      alert('Please select a date');
+      return;
+    }
+    if (actionFormData.quantity <= 0) {
+      alert('Quantity must be greater than 0');
+      return;
+    }
+    if (actionFormData.quantity > (receiveFromVendorModal.sentToVendor || 0)) {
+      alert('Quantity exceeds sent to vendor quantity');
+      return;
+    }
+    if (actionFormData.shortItem !== undefined && actionFormData.shortItem > actionFormData.quantity) {
+      alert('Short item quantity cannot exceed receive quantity');
+      return;
+    }
+
+    try {
+      setProcessing(true);
+      const newReceivedBack = (receiveFromVendorModal.receivedBack || 0) + actionFormData.quantity;
+      const newSentToVendor = Math.max(0, (receiveFromVendorModal.sentToVendor || 0) - actionFormData.quantity);
+      const newNetRejected = Math.max(0, receiveFromVendorModal.quantity - newSentToVendor - newReceivedBack - (receiveFromVendorModal.scrapped || 0));
+      
+      await inventoryService.updateRejectedItemReport(receiveFromVendorModal.id, {
+        sentToVendor: newSentToVendor,
+        receivedBack: newReceivedBack,
+        netRejected: newNetRejected,
+      });
+
+      const shortQty = actionFormData.shortItem || 0;
+      const receivedQty = actionFormData.quantity - shortQty;
+      const totalQty = actionFormData.quantity;
+      
+      const invoiceNumber = actionFormData.invoiceChallan || `RECV-${receiveFromVendorModal.reportNumber}-${Date.now()}`;
+      
+      let unitPrice = 0.01;
+      try {
+        const skuResponse = await skuService.getById(receiveFromVendorModal.skuId);
+        if (skuResponse?.success && skuResponse.data?.unitPrice) {
+          unitPrice = skuResponse.data.unitPrice > 0 ? skuResponse.data.unitPrice : 0.01;
+        }
+      } catch (skuError) {
+        console.warn('Could not fetch SKU unit price, using 0.01:', skuError);
+      }
+      
+      const incomingData = {
+        invoiceDate: actionFormData.date,
+        invoiceNumber: invoiceNumber,
+        receivingDate: actionFormData.date,
+        vendorId: parseInt(actionFormData.vendorId),
+        brandId: parseInt(actionFormData.brandId),
+        documentType: 'bill',
+        status: 'completed',
+        remarks: actionFormData.remarks || `Items received from vendor. Condition: ${actionFormData.condition}. ${receiveFromVendorModal.reportNumber ? `Report: ${receiveFromVendorModal.reportNumber}` : ''}`,
+        items: [
+          {
+            skuId: receiveFromVendorModal.skuId,
+            received: receivedQty,
+            short: shortQty,
+            totalQuantity: totalQty,
+            unitPrice: unitPrice,
+            totalValue: totalQty * unitPrice,
+          }
+        ]
+      };
+      
+      await inventoryService.addIncoming(incomingData);
+
+      await loadRejectedItemReports();
+      await loadShortItemReports();
+      setReceiveFromVendorModal(null);
+      resetFormData();
+      
+      const messages = ['added to available stock'];
+      if (shortQty > 0) {
+        messages.push('short item recorded');
+      }
+      
+      alert(`Items received from vendor successfully and ${messages.join(', ')}`);
+    } catch (error: any) {
+      console.error('Error receiving from vendor:', error);
+      alert(error.response?.data?.error || error.response?.data?.message || 'Failed to receive items from vendor');
+    } finally {
+      setProcessing(false);
+    }
+  };
+
+  const handleScrapSubmit = async () => {
+    if (!scrapModal) return;
+    
+    if (!actionFormData.date) {
+      alert('Please select a date');
+      return;
+    }
+    if (actionFormData.quantity <= 0) {
+      alert('Quantity must be greater than 0');
+      return;
+    }
+    if (actionFormData.quantity > (scrapModal.quantity - (scrapModal.sentToVendor || 0) - (scrapModal.receivedBack || 0) - (scrapModal.scrapped || 0))) {
+      alert('Quantity exceeds available rejected quantity');
+      return;
+    }
+    if (actionFormData.scrapReason === 'other' && !actionFormData.scrapReasonOther.trim()) {
+      alert('Please specify the reason for scrapping');
+      return;
+    }
+    if (!actionFormData.approvedBy) {
+      alert('Please select who approved this scrap action');
+      return;
+    }
+
+    try {
+      setProcessing(true);
+      const newScrapped = (scrapModal.scrapped || 0) + actionFormData.quantity;
+      const newNetRejected = Math.max(0, scrapModal.quantity - (scrapModal.sentToVendor || 0) - (scrapModal.receivedBack || 0) - newScrapped);
+      
+      await inventoryService.updateRejectedItemReport(scrapModal.id, {
+        scrapped: newScrapped,
+        netRejected: newNetRejected,
+      });
+
+      await loadRejectedItemReports();
+      setScrapModal(null);
+      resetFormData();
+      alert('Items marked as scrapped successfully');
+    } catch (error: any) {
+      console.error('Error scrapping items:', error);
+      alert(error.response?.data?.error || 'Failed to scrap items');
+    } finally {
+      setProcessing(false);
+    }
+  };
+
+  // Short items handlers
+  const toggleShortDropdown = (reportId: number) => {
+    setOpenShortDropdownId(openShortDropdownId === reportId ? null : reportId);
+  };
+
+  const getDefaultShortItemFormData = (): ShortItemActionFormData => ({
+    quantity: 0,
+    remarks: '',
+    vendorId: '',
+    brandId: '',
+    date: new Date().toISOString().split('T')[0],
+    docketTracking: '',
+    transporter: '',
+    reason: '',
+    condition: 'replaced',
+    invoiceChallan: '',
+    addToStock: true,
+    receivedBy: '',
+  });
+
+  const resetShortItemFormData = () => {
+    setShortItemFormData(getDefaultShortItemFormData());
+  };
+
+  const handleShortReceiveBack = (report: ShortItemReport) => {
+    setOpenShortDropdownId(null);
+    const availableQty = report.shortQuantity - (report.receivedBack || 0);
+    setShortItemFormData({
+      ...getDefaultShortItemFormData(),
+      quantity: Math.max(0, availableQty),
+      vendorId: report.vendorId || '',
+      brandId: report.brandId || '',
+    });
+    setReceiveBackModal(report);
+  };
+
+  const handleShortReceiveBackSubmit = async () => {
+    if (!receiveBackModal) return;
+    
+    if (!shortItemFormData.vendorId) {
+      alert('Please select a vendor');
+      return;
+    }
+    if (!shortItemFormData.brandId) {
+      alert('Please select a brand');
+      return;
+    }
+    if (!shortItemFormData.date) {
+      alert('Please select a date');
+      return;
+    }
+    if (!shortItemFormData.invoiceChallan) {
+      alert('Please enter invoice number');
+      return;
+    }
+    if (!shortItemFormData.receivedBy) {
+      alert('Please select received by');
+      return;
+    }
+    if (shortItemFormData.quantity <= 0) {
+      alert('Quantity must be greater than 0');
+      return;
+    }
+    const availableQty = receiveBackModal.shortQuantity - (receiveBackModal.receivedBack || 0);
+    if (shortItemFormData.quantity > availableQty) {
+      alert('Quantity exceeds available short quantity');
+      return;
+    }
+
+    try {
+      setProcessing(true);
+      
+      let unitPrice = 0.01;
+      try {
+        const skuResponse = await skuService.getById(receiveBackModal.skuId);
+        if (skuResponse?.success && skuResponse.data?.unitPrice) {
+          unitPrice = skuResponse.data.unitPrice > 0 ? skuResponse.data.unitPrice : 0.01;
+        }
+      } catch (skuError) {
+        console.warn('Could not fetch SKU unit price, using 0.01:', skuError);
+      }
+      
+      const incomingData = {
+        invoiceDate: shortItemFormData.date,
+        invoiceNumber: shortItemFormData.invoiceChallan,
+        receivingDate: shortItemFormData.date,
+        vendorId: parseInt(shortItemFormData.vendorId),
+        brandId: parseInt(shortItemFormData.brandId),
+        receivedBy: parseInt(shortItemFormData.receivedBy),
+        documentType: 'bill',
+        status: 'completed',
+        remarks: shortItemFormData.remarks || `Short items received back. Original invoice: ${receiveBackModal.invoiceNumber}`,
+        items: [
+          {
+            skuId: receiveBackModal.skuId,
+            received: shortItemFormData.quantity,
+            short: 0,
+            totalQuantity: shortItemFormData.quantity,
+            unitPrice: unitPrice,
+            totalValue: shortItemFormData.quantity * unitPrice,
+          }
+        ]
+      };
+      
+      await inventoryService.addIncoming(incomingData);
+      
+      const newShortQuantity = receiveBackModal.shortQuantity - shortItemFormData.quantity;
+      await inventoryService.updateShortItem(
+        receiveBackModal.incomingInventoryId,
+        {
+          itemId: receiveBackModal.incomingInventoryItemId,
+          short: Math.max(0, newShortQuantity),
+        }
+      );
+      
+      await loadShortItemReports();
+      setReceiveBackModal(null);
+      resetShortItemFormData();
+      alert(`Short items received back successfully and added to stock`);
+    } catch (error: any) {
+      console.error('Error receiving back short items:', error);
+      alert(error.response?.data?.error || error.response?.data?.message || 'Failed to receive back short items');
+    } finally {
+      setProcessing(false);
+    }
+  };
+
+  const handleShortViewHistory = (report: ShortItemReport) => {
+    setOpenShortDropdownId(null);
+    alert('History view functionality to be implemented');
+  };
+
   const handleExportPDF = async () => {
     setShowExportDropdown(false);
     try {
@@ -886,6 +1512,26 @@ const InventoryPage: React.FC = () => {
           >
             Outgoing Records
           </button>
+          <button
+            onClick={() => setActiveTab('rejected')}
+            className={`px-[18px] py-[9px] rounded-xl font-black text-[11.7px] uppercase tracking-wider transition-all ${
+              activeTab === 'rejected'
+                ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/20'
+                : 'text-slate-500 hover:bg-slate-50'
+            }`}
+          >
+            Rejected Items
+          </button>
+          <button
+            onClick={() => setActiveTab('short')}
+            className={`px-[18px] py-[9px] rounded-xl font-black text-[11.7px] uppercase tracking-wider transition-all ${
+              activeTab === 'short'
+                ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/20'
+                : 'text-slate-500 hover:bg-slate-50'
+            }`}
+          >
+            Short Items
+          </button>
         </nav>
       </div>
 
@@ -1017,6 +1663,161 @@ const InventoryPage: React.FC = () => {
             onToggleRow={toggleOutgoingRow}
           />
         </>
+      )}
+
+      {activeTab === 'rejected' && (
+        <>
+          <div className="bg-white rounded-lg shadow p-4">
+            <div className="flex items-center gap-4 mb-4">
+              <input
+                type="text"
+                placeholder="Search by report number, SKU, item name, or invoice number..."
+                value={rejectedSearch}
+                onChange={(e) => setRejectedSearch(e.target.value)}
+                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              />
+              <input
+                type="date"
+                value={rejectedDateFrom}
+                onChange={(e) => setRejectedDateFrom(e.target.value)}
+                placeholder="From Date"
+                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              />
+              <input
+                type="date"
+                value={rejectedDateTo}
+                onChange={(e) => setRejectedDateTo(e.target.value)}
+                placeholder="To Date"
+                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+          </div>
+
+          <RejectedItemReportTable
+            reports={filteredRejectedReports}
+            loading={rejectedLoading}
+            openDropdownId={openRejectedDropdownId}
+            dropdownRefs={rejectedDropdownRefs}
+            onToggleDropdown={toggleRejectedDropdown}
+            onSendToVendor={handleSendToVendor}
+            onReceiveFromVendor={handleReceiveFromVendor}
+            onScrap={handleScrap}
+            onViewHistory={handleViewHistory}
+          />
+        </>
+      )}
+
+      {activeTab === 'short' && (
+        <>
+          <div className="bg-white rounded-lg shadow p-4">
+            <div className="flex items-center gap-4 mb-4">
+              <input
+                type="text"
+                placeholder="Search by invoice number, SKU, or item name..."
+                value={shortSearch}
+                onChange={(e) => setShortSearch(e.target.value)}
+                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              />
+              <input
+                type="date"
+                value={shortDateFrom}
+                onChange={(e) => setShortDateFrom(e.target.value)}
+                placeholder="From Date"
+                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              />
+              <input
+                type="date"
+                value={shortDateTo}
+                onChange={(e) => setShortDateTo(e.target.value)}
+                placeholder="To Date"
+                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+          </div>
+
+          <ShortItemReportTable
+            reports={filteredShortReports}
+            loading={shortLoading}
+            openDropdownId={openShortDropdownId}
+            dropdownRefs={shortDropdownRefs}
+            onToggleDropdown={toggleShortDropdown}
+            onReceiveBack={handleShortReceiveBack}
+            onViewHistory={handleShortViewHistory}
+          />
+        </>
+      )}
+
+      {/* Rejected Items Modals */}
+      {sendToVendorModal && (
+        <SendToVendorModal
+          report={sendToVendorModal}
+          formData={actionFormData}
+          vendors={vendors}
+          brands={brands}
+          processing={processing}
+          onClose={() => {
+            setSendToVendorModal(null);
+            resetFormData();
+          }}
+          onFormChange={handleFormChange}
+          onSubmit={handleSendToVendorSubmit}
+        />
+      )}
+
+      {receiveFromVendorModal && (
+        <ReceiveFromVendorModal
+          report={receiveFromVendorModal}
+          formData={actionFormData}
+          vendors={vendors}
+          brands={brands}
+          processing={processing}
+          onClose={() => {
+            setReceiveFromVendorModal(null);
+            resetFormData();
+          }}
+          onFormChange={handleFormChange}
+          onSubmit={handleReceiveFromVendorSubmit}
+        />
+      )}
+
+      {scrapModal && (
+        <ScrapModal
+          report={scrapModal}
+          formData={actionFormData}
+          teams={teams}
+          processing={processing}
+          onClose={() => {
+            setScrapModal(null);
+            resetFormData();
+          }}
+          onFormChange={handleFormChange}
+          onSubmit={handleScrapSubmit}
+        />
+      )}
+
+      {historyModal && (
+        <HistoryModal
+          report={historyModal}
+          onClose={() => setHistoryModal(null)}
+        />
+      )}
+
+      {/* Short Items Modal */}
+      {receiveBackModal && (
+        <ReceiveBackModal
+          report={receiveBackModal}
+          formData={shortItemFormData}
+          vendors={vendors}
+          brands={brands}
+          teams={teams}
+          processing={processing}
+          onClose={() => {
+            setReceiveBackModal(null);
+            resetShortItemFormData();
+          }}
+          onFormChange={(data) => setShortItemFormData(prev => ({ ...prev, ...data }))}
+          onSubmit={handleShortReceiveBackSubmit}
+        />
       )}
 
       <EditRejectedShortModal
