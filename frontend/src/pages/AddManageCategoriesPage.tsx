@@ -1425,7 +1425,12 @@ export default function AddManageCategoriesPage() {
           {step === 2 && (
             <div className="w-full">
               <div className="space-y-4">
-                {getSelectedProducts().map((productTag) => {
+                {getSelectedProducts().length === 0 ? (
+                  <div className="bg-white border border-gray-100 rounded-xl p-5 opacity-60">
+                    <div className="text-sm text-gray-500">Select Product Categories in Step 1 first.</div>
+                  </div>
+                ) : (
+                  getSelectedProducts().map((productTag) => {
                   const productId = productTag.id;
                   if (!productId) return null;
                   
@@ -1546,27 +1551,24 @@ export default function AddManageCategoriesPage() {
                           {itemEditMode ? 'Cancel' : 'Edit'}
                         </button>
                       </div>
+                      </div>
                     </div>
                   );
-                })}
-                
-                {getSelectedProducts().length === 0 && (
-                  <div className="bg-white border border-gray-100 rounded-xl p-5 opacity-60">
-                    <div className="text-sm text-gray-500">Select Product Categories in Step 1 first.</div>
-                  </div>
+                  })
                 )}
 
-                <div className="mt-4 flex justify-end">
-                  <button
-                    type="button"
-                    onClick={goNextFromItem}
-                    disabled={getSelectedProducts().length === 0 || !hasAnyItemCategories()}
-                    className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-900 text-white text-sm font-semibold hover:bg-black disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    <Save className="w-4 h-4" />
-                    Save All and Next
-                  </button>
-                </div>
+                {getSelectedProducts().length > 0 && (
+                  <div className="mt-4 flex justify-end">
+                    <button
+                      type="button"
+                      onClick={goNextFromItem}
+                      disabled={!hasAnyItemCategories()}
+                      className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-900 text-white text-sm font-semibold hover:bg-black disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Next
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           )}
