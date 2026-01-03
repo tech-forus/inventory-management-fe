@@ -155,20 +155,35 @@ const CategoryMasterTab: React.FC<CategoryMasterTabProps> = ({
 
   const handleDelete = async (row: UnifiedCategoryRow) => {
     const typeName = row.type === 'product' ? 'product category' : row.type === 'item' ? 'item category' : 'sub category';
-    if (!window.confirm(`Are you sure you want to delete this ${typeName}?`)) return;
+    const categoryName = row.type === 'product' ? row.productCategory : row.type === 'item' ? row.itemCategory : row.subCategory;
+    
+    const confirmMessage = `Are you sure you want to PERMANENTLY DELETE this ${typeName}?\n\n` +
+      `Category: "${categoryName}"\n\n` +
+      `This action will completely remove it from the database and cannot be undone.`;
+    
+    if (!window.confirm(confirmMessage)) return;
 
     try {
       setSaving(true);
       if (row.type === 'product' && row.productCategoryId) {
-        await libraryService.deleteYourProductCategory(row.productCategoryId);
+        await libraryService.deleteYourProductCategory(row.productCategoryId, true);
       } else if (row.type === 'item' && row.itemCategoryId) {
-        await libraryService.deleteYourItemCategory(row.itemCategoryId);
+        await libraryService.deleteYourItemCategory(row.itemCategoryId, true);
       } else if (row.type === 'sub' && row.subCategoryId) {
-        await libraryService.deleteYourSubCategory(row.subCategoryId);
+        await libraryService.deleteYourSubCategory(row.subCategoryId, true);
+      } else {
+        throw new Error('Invalid category ID');
       }
+      
+      // Show success message
+      alert(`${typeName.charAt(0).toUpperCase() + typeName.slice(1)} "${categoryName}" has been permanently deleted from the database.`);
       onRefresh();
     } catch (error: any) {
-      alert(error.response?.data?.error || `Failed to delete ${typeName}`);
+      const errorMessage = error.response?.data?.error || 
+                          error.response?.data?.message || 
+                          error.message || 
+                          `Failed to delete ${typeName}`;
+      alert(`Error: ${errorMessage}\n\nThe category may still exist in the database.`);
     } finally {
       setSaving(false);
     }

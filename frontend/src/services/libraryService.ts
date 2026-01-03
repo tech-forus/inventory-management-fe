@@ -307,20 +307,23 @@ export const libraryService = {
     invalidateCachePrefix('GET:/yourbrands');
     return response.data;
   },
-  deleteYourProductCategory: async (id: number) => {
-    const response = await api.delete(`/yourproductcategories/${id}`);
+  deleteYourProductCategory: async (id: number, hardDelete: boolean = true) => {
+    const url = `/yourproductcategories/${id}${hardDelete ? '?force=true' : ''}`;
+    const response = await api.delete(url);
     invalidateCachePrefix('GET:/yourproductcategories');
     invalidateCachePrefix('GET:/categories');
     return response.data;
   },
-  deleteYourItemCategory: async (id: number) => {
-    const response = await api.delete(`/youritemcategories/${id}`);
+  deleteYourItemCategory: async (id: number, hardDelete: boolean = true) => {
+    const url = `/youritemcategories/${id}${hardDelete ? '?force=true' : ''}`;
+    const response = await api.delete(url);
     invalidateCachePrefix('GET:/youritemcategories');
     invalidateCachePrefix('GET:/categories');
     return response.data;
   },
-  deleteYourSubCategory: async (id: number) => {
-    const response = await api.delete(`/yoursubcategories/${id}`);
+  deleteYourSubCategory: async (id: number, hardDelete: boolean = true) => {
+    const url = `/yoursubcategories/${id}${hardDelete ? '?force=true' : ''}`;
+    const response = await api.delete(url);
     invalidateCachePrefix('GET:/yoursubcategories');
     invalidateCachePrefix('GET:/categories');
     return response.data;
