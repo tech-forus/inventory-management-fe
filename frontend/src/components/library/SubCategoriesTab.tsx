@@ -330,11 +330,20 @@ const SubCategoriesTab: React.FC<SubCategoriesTabProps> = ({
         alert('Item Category must be selected in Sub Category');
         return;
       }
+      
+      // Check both single categoryForm and multipleCategories
+      const hasSingleSub = subData.categoryForm?.name && subData.categoryForm.name.trim();
       const validSubs = subData.multipleCategories?.filter((c: any) => c.name?.trim()) || [];
-      if (validSubs.length === 0) {
+      
+      if (!hasSingleSub && validSubs.length === 0) {
         alert('At least one Sub Category is required');
         return;
       }
+      
+      // If single sub category exists, add it to validSubs (avoid duplicates)
+      const allValidSubs = hasSingleSub 
+        ? [{ name: subData.categoryForm.name.trim() }, ...validSubs.filter((s: any) => s.name.trim() !== subData.categoryForm.name.trim())]
+        : validSubs;
 
       setSaving(true);
 
@@ -344,9 +353,10 @@ const SubCategoriesTab: React.FC<SubCategoriesTabProps> = ({
         name: productData.categoryForm.name.trim(),
         description: productData.categoryForm.description || '',
       });
-      productCategoryId = productRes.data?.id;
+      // API returns response.data, which is already the data object
+      productCategoryId = productRes?.id || productRes?.data?.id;
       if (!productCategoryId) {
-        throw new Error('Failed to create product category');
+        throw new Error('Failed to create product category: No ID returned');
       }
 
       // 2. Save Item Category (use the newly created productCategoryId)
@@ -356,13 +366,14 @@ const SubCategoriesTab: React.FC<SubCategoriesTabProps> = ({
         name: itemData.categoryForm.name.trim(),
         description: itemData.categoryForm.description || '',
       });
-      itemCategoryId = itemRes.data?.id;
+      // API returns response.data, which is already the data object
+      itemCategoryId = itemRes?.id || itemRes?.data?.id;
       if (!itemCategoryId) {
-        throw new Error('Failed to create item category');
+        throw new Error('Failed to create item category: No ID returned');
       }
 
       // 3. Save all Sub Categories
-      const subPromises = validSubs.map((sub: any) =>
+      const subPromises = allValidSubs.map((sub: any) =>
         libraryService.createYourSubCategory({
           itemCategoryId: itemCategoryId,
           name: sub.name.trim(),
