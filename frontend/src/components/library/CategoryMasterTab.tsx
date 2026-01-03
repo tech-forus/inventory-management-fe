@@ -102,38 +102,11 @@ const CategoryMasterTab: React.FC<CategoryMasterTabProps> = ({
   useEffect(() => {
     const rows: UnifiedCategoryRow[] = [];
 
-    // Add Product Categories
-    productCategories.forEach((pc) => {
-      rows.push({
-        id: `product-${pc.id}`,
-        type: 'product',
-        productCategory: pc.name,
-        itemCategory: '—',
-        subCategory: '—',
-        createdAt: pc.createdAt || '',
-        productCategoryId: pc.id,
-      });
-    });
-
-    // Add Item Categories
-    itemCategories.forEach((ic) => {
-      const productCat = productCategories.find((pc) => pc.id === ic.productCategoryId);
-      rows.push({
-        id: `item-${ic.id}`,
-        type: 'item',
-        productCategory: productCat?.name || '—',
-        itemCategory: ic.name,
-        subCategory: '—',
-        createdAt: ic.createdAt || '',
-        productCategoryId: ic.productCategoryId,
-        itemCategoryId: ic.id,
-      });
-    });
-
-    // Add Sub Categories
+    // ONLY create rows for Sub Categories (complete hierarchy)
     subCategories.forEach((sc) => {
       const itemCat = itemCategories.find((ic) => ic.id === sc.itemCategoryId);
       const productCat = productCategories.find((pc) => pc.id === itemCat?.productCategoryId);
+      
       rows.push({
         id: `sub-${sc.id}`,
         type: 'sub',
